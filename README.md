@@ -17,6 +17,8 @@
 
 ## How to use:
 
+### NOTE: Please only use this on small private servers. Right now it is set up for testing only, meaning anyone on the server can invoke its commands. Also, the bot will join voice chat whenever someone else joins!
+
 Install the dependencies:
 ```bash
 pip install -r requirements.txt
