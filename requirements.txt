@@ -9,3 +9,4 @@ azure-cognitiveservices-speech
 openai-whisper
 langchain
 llama-cpp-python
+SpeechRecognition
