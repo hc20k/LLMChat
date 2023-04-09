@@ -188,4 +188,4 @@ config.ini
 debug.log
 persistent.db
 models/
-*.wav
+temp*.wav
