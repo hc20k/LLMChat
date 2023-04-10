@@ -3,10 +3,13 @@ import discord
 import elevenlabslib as ell
 import requests
 import whisper
+from PIL import Image
 from discord import app_commands
 from discord.interactions import Interaction
 
+from blip import BLIP
 from config import Config
+
 # models
 from llm_sources import LLMSource
 from llm_sources.llama import LLaMA
@@ -34,9 +37,9 @@ class DiscordClient(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="identity",
-                description="Sets the chatbot's identity.",
-                callback=self.set_identity,
+                name="configure",
+                description="Configure the chatbot.",
+                callback=self.show_configure,
             )
         )
         self.tree.add_command(
@@ -104,6 +107,11 @@ class DiscordClient(discord.Client):
         else:
             self.whisper = None
 
+        if self.config.bot_blip_enabled:
+            self.blip = BLIP()
+        else:
+            self.blip = None
+
         self.db: PersistentData = None
         self.sink = None
         self.run(
@@ -168,7 +176,7 @@ class DiscordClient(discord.Client):
         await ctx.response.send_message("Message retried.", delete_after=0.5)
 
     async def set_message_context_count(self, ctx: Interaction, count: int):
-        self.config.context_messages_count = count
+        self.config.llm_context_messages_count = count
         await ctx.response.send_message(
             f"Set message context count to {count}", delete_after=3
         )
@@ -186,13 +194,15 @@ class DiscordClient(discord.Client):
         embed.add_field(name="Model", value=self.llm.current_model_name)
         embed.add_field(name="Name", value=self.config.bot_name)
         embed.add_field(name="Description", value=self.config.bot_identity)
-        embed.add_field(name="\u200B", value="\u200B", inline=False)  # seperator
+        embed.add_field(name="\u200B", value="\u200B",
+                        inline=False)  # seperator
         embed.add_field(
             name="Your info (set this information with /your_identity)",
             value="\u200B",
             inline=False,
         )
-        embed.add_field(name="Name", value=name if name is not None else "*Not set!*")
+        embed.add_field(
+            name="Name", value=name if name is not None else "*Not set!*")
         embed.add_field(
             name="Description", value=identity if identity is not None else "*Not set!*"
         )
@@ -208,18 +218,21 @@ class DiscordClient(discord.Client):
         this = self
 
         class ModelSelect(discord.ui.Select):
-            def __init__(self, models):
+            def __init__(self, llm: LLMSource):
+                self.llm = llm
                 super(ModelSelect, self).__init__(
-                    options=[discord.SelectOption(label=m, value=m) for m in models]
+                    options=[discord.SelectOption(
+                        label=m, value=m, default=llm.current_model_name == m) for m in llm.list_models()],
+                    placeholder="Select a model...",
                 )
 
             async def callback(self, ctx: Interaction):
                 model = ctx.data["values"][0]
-                this.llm.set_model(model)
+                self.llm.set_model(model)
                 await this.change_presence(activity=discord.Game(name=model))
-                await ctx.response.send_message(f"Set model to **{model}**.")
+                await ctx.response.edit_message(content=f"Model changed to *{self.llm.current_model_name}*", embed=None, delete_after=3)
 
-        select = ModelSelect(await self.llm.list_models())
+        select = ModelSelect(self.llm)
         view = discord.ui.View()
         view.add_item(select)
 
@@ -263,23 +276,20 @@ class DiscordClient(discord.Client):
                 )
 
             async def on_submit(self, interaction: Interaction):
-                embed = discord.Embed(title="Changes committed.")
                 this.db.set_identity(
                     ctx.user.id, self.children[0].value, self.children[1].value
                 )
-                embed.add_field(name="Name", value=self.children[0].value, inline=False)
-                embed.add_field(name="Description", value=self.children[1].value)
-                await interaction.response.send_message(embeds=[embed])
+                await interaction.response.send_message("Changes committed.", delete_after=3)
 
         modal = IdentityModal(title=f"Edit {ctx.user.display_name}'s identity")
 
         await ctx.response.send_modal(modal)
 
-    async def set_identity(self, ctx: Interaction):
+    async def show_configure(self, ctx: Interaction):
         this = self
 
-        class IdentityModal(discord.ui.Modal):
-            def __init__(self, *args, **kwargs) -> None:
+        class ConfigureModal(discord.ui.Modal):
+            def __init__(self, page=1, *args, **kwargs) -> None:
                 super().__init__(*args, **kwargs)
 
                 self.add_item(
@@ -299,18 +309,29 @@ class DiscordClient(discord.Client):
                         default=this.config.bot_identity,
                     )
                 )
+                self.add_item(
+                    discord.ui.TextInput(
+                        label="Reminder",
+                        custom_id="reminder",
+                        placeholder="A short context clue to remind the bot to stay in character.",
+                        style=discord.TextStyle.paragraph,
+                        default=this.config.bot_reminder,
+                        required=False,
+                    )
+                )
 
             async def on_submit(self, interaction: Interaction):
-                embed = discord.Embed(title="Changes committed.")
+
                 this.config.bot_name = self.children[0].value
                 await interaction.guild.me.edit(nick=this.config.bot_name)
                 this.config.bot_identity = self.children[1].value
 
-                embed.add_field(name="Name", value=this.config.bot_name, inline=False)
-                embed.add_field(name="Description", value=this.config.bot_identity)
-                await interaction.response.send_message(embeds=[embed])
+                if self.children[2].value:
+                    this.config.bot_reminder = self.children[2].value
 
-        modal = IdentityModal(title="Edit bot identity")
+                await interaction.response.send_message("Changes committed.", delete_after=3)
+
+        modal = ConfigureModal(title="Configure chatbot")
 
         await ctx.response.send_modal(modal)
 
@@ -332,7 +353,8 @@ class DiscordClient(discord.Client):
         vc.stop()
 
         if self.config.bot_tts_service == "elevenlabs":
-            voice = self.eleven.get_voices_by_name(self.config.elevenlabs_voice)[0]
+            voice = self.eleven.get_voices_by_name(
+                self.config.elevenlabs_voice)[0]
 
             logger.debug("Using voice", voice.get_name())
             data = voice.generate_audio_bytes(response, stability=0.2)
@@ -361,7 +383,10 @@ class DiscordClient(discord.Client):
         vc.play(stream)
 
     async def on_voice_state_update(
-            self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
     ):
         if after.channel and len(self.voice_clients) == 0:
             vc: discord.VoiceClient = await after.channel.connect()
@@ -378,26 +403,37 @@ class DiscordClient(discord.Client):
         self.db.remove(payload.message_id)
 
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
-        self.db.edit(payload.message_id, payload.data['content'])
+        self.db.edit(payload.message_id, payload.data["content"])
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id:
             # from me
             return
 
+        if self.config.bot_blip_enabled:
+            for a in message.attachments:
+                if not a.content_type.startswith("image/"):
+                    continue
+
+                # download image
+                r = requests.get(a.url, stream=True)
+                r.raise_for_status()
+                img = Image.open(r.raw).convert("RGB")
+                caption = self.blip.process_image(img)
+                logger.info(f"Image caption: {caption}")
+                message.content += f"\n[{caption}]"
+
         self.db.append(message)
+
         async with message.channel.typing():
             try:
                 response = await self.llm.generate_response(invoker=message.author)
             except Exception as e:
-                await message.channel.send(
-                    f"Exception thrown while trying to generate message:\n```{str(e)}```"
-                )
+                await message.channel.send(f"Exception thrown while trying to generate message:\n```{str(e)}```")
 
                 # since it failed remove the message
                 self.db.remove(message.id)
                 raise e
-                return
 
         logger.debug(f"Response: {response}")
         sent_message = await message.channel.send(response)

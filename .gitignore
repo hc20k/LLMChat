@@ -189,3 +189,4 @@ debug.log
 persistent.db
 models/
 temp*.wav
+.run/

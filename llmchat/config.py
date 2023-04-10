@@ -35,12 +35,12 @@ class Config:
         self.save()
 
     @property
-    def context_messages_count(self) -> int:
-        return self._config.getint("OpenAI", "context_messages_count")
+    def llm_context_messages_count(self) -> int:
+        return self._config.getint("LLM", "context_messages_count")
 
-    @context_messages_count.setter
-    def context_messages_count(self, count):
-        self._config.set("OpenAI", "context_messages_count", count)
+    @llm_context_messages_count.setter
+    def llm_context_messages_count(self, count):
+        self._config.set("LLM", "context_messages_count", count)
         self.save()
 
     @property
@@ -167,6 +167,24 @@ class Config:
     @bot_llm.setter
     def bot_llm(self, llm):
         self._config.set("Bot", "llm", llm)
+        self.save()
+
+    @property
+    def bot_blip_enabled(self) -> bool:
+        return self._config.getboolean("Bot", "blip_enabled")
+
+    @bot_blip_enabled.setter
+    def bot_blip_enabled(self, enabled):
+        self._config.set("Bot", "blip_enabled", "true" if enabled is True else "false")
+        self.save()
+
+    @property
+    def bot_reminder(self):
+        return self._config.get("Bot", "reminder")
+
+    @bot_reminder.setter
+    def bot_reminder(self, reminder):
+        self._config.set("Bot", "reminder", reminder)
         self.save()
 
     @property

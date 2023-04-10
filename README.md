@@ -12,6 +12,7 @@
 - Support for local LLaMA models
 - Local whisper support for speech recognition (as well as Google speech recognition)
 - Chat-optimized commands
+- Image recognition support with BLIP
 
 ![Screenshot of messages](assets/repo/message_ss.png)
 
@@ -23,6 +24,9 @@ Install the dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to install PyTorch as well. [Directions here.](https://pytorch.org/get-started/locally/)
+
 Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`
 
 ### Possible field values:
@@ -48,7 +52,7 @@ python main.py
 ## Command reference
 
 - `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
-- `/identity` - Allows you to set the chatbot's name and identity description
+- `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
 - `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
 - `/avatar [url]` - Allows you to easily set the chatbot's avatar to a specific URL.
 - `/purge` - Deletes all of the messages in the current channel. *DANGEROUS*. I should probably disable this but I use it during testing.

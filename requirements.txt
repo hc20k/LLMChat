@@ -10,3 +10,4 @@ openai-whisper
 langchain
 llama-cpp-python
 SpeechRecognition
+transformers

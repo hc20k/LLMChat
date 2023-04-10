@@ -11,7 +11,7 @@ class LLMSource:
     async def generate_response(self, invoker: User = None) -> str:
         return NotImplementedError()
 
-    async def list_models(self) -> list[str]:
+    def list_models(self) -> list[str]:
         return NotImplementedError()
 
     def set_model(self, model_id: str) -> None:

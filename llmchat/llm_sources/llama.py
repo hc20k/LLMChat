@@ -39,7 +39,7 @@ class LLaMA(LLMSource):
         )
         # f16_kv is half precision, n_ctx is context window
 
-    async def list_models(self) -> list[str]:
+    def list_models(self) -> list[str]:
         return os.listdir(self.config.llama_search_path)
 
     def set_model(self, model_id: str) -> None:
@@ -55,7 +55,7 @@ class LLaMA(LLMSource):
             name, identity = identity
             context += identity + "\n"
 
-        for i in self.db.get_recent_messages(self.config.context_messages_count):
+        for i in self.db.get_recent_messages(self.config.llm_context_messages_count):
             author_id, content, message_id = i
             if author_id == -1:
                 continue
@@ -71,6 +71,9 @@ class LLaMA(LLMSource):
                 context += f"{name}: {content}"
             context += "\n$$$\n"
 
+        if self.config.bot_reminder:
+            context += f"Reminder: {self.config.bot_reminder}\n"
+
         context += f"{self.config.bot_name}: "
         return context
 
@@ -82,6 +85,7 @@ class LLaMA(LLMSource):
         logger.debug(context)
 
         # Run the self.model call in a separate thread so we don't block heartbeat
+        # Any ideas why this is painfully slow? Even on my i7-10700K it's painfully slower than it should be.
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(self.model, context, {"stop": ["$$$"]})
 
