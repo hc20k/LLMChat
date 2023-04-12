@@ -63,7 +63,6 @@ class OpenAI(LLMSource):
                     temperature=self.config.llm_temperature,
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
-                    request_timeout=15,
                 )
                 response = response.choices[0].text.strip()
             else:
@@ -76,7 +75,6 @@ class OpenAI(LLMSource):
                     temperature=self.config.llm_temperature,
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
-                    request_timeout=15
                 )
                 response = response.choices[0].message.content.strip()
             await openai.aiosession.get().close()

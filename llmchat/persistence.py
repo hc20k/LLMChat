@@ -67,7 +67,7 @@ class PersistentData:
             (user_id, name, identity),
         )
         self.connection.commit()
-    
+
     def get_identity(self, user_id: int):
         self.cursor.execute(
             "SELECT name,identity FROM user_identities WHERE user_id = ?", (user_id,)
