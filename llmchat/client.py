@@ -137,7 +137,7 @@ class DiscordClient(discord.Client):
                 speech_config=self.speech_config, audio_config=self.audio_config
             )
 
-    def setup_llm(self):
+    async def setup_llm(self):
         logger.info(f"LLM: {self.config.bot_llm}")
         params = [self, self.config, self.db]
         if self.config.bot_llm == "openai":
@@ -340,7 +340,7 @@ class DiscordClient(discord.Client):
         logger.info(f"Logged in as {self.user}")
         await self.wait_until_ready()
         self.db: PersistentData = PersistentData(self)
-        self.setup_llm()
+        await self.setup_llm()
         await self.tree.sync()
         self.event(self.on_voice_state_update)
 
