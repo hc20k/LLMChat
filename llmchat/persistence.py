@@ -23,7 +23,7 @@ class PersistentData:
         self.cursor.execute(
             """
     CREATE TABLE IF NOT EXISTS user_identities (
-        user_id INTEGER,
+        user_id INTEGER UNIQUE,
         identity TEXT,
         name TEXT
     )
@@ -63,14 +63,14 @@ class PersistentData:
 
     def set_identity(self, user_id: int, name: str, identity: str):
         self.cursor.execute(
-            "INSERT OR REPLACE INTO user_identities VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO user_identities (user_id, name, identity) VALUES (?, ?, ?)",
             (user_id, name, identity),
         )
         self.connection.commit()
-
+    
     def get_identity(self, user_id: int):
         self.cursor.execute(
-            "SELECT identity, name FROM user_identities WHERE user_id = ?", (user_id,)
+            "SELECT name,identity FROM user_identities WHERE user_id = ?", (user_id,)
         )
         row = self.cursor.fetchone()
         return row if row is not None else (None, None)
