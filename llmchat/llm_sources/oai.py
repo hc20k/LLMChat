@@ -5,6 +5,7 @@ from llmchat.logger import logger
 import discord
 import openai
 import asyncio
+from aiohttp import ClientSession
 
 
 class OpenAI(LLMSource):
@@ -23,12 +24,14 @@ class OpenAI(LLMSource):
 
     def list_models(self) -> list[str]:
         all_models = openai.Model.list()
-        return [
+        ret = [
             m.id
             for m in all_models.data
             if (m.id.startswith("gpt") or m.id.startswith("text-"))
             and not ("-search-" in m.id or "-similarity-" in m.id)
         ]
+        ret.sort()
+        return ret
 
     def set_model(self, model_id: str) -> None:
         logger.info(f"OpenAI model set to {model_id}")
@@ -47,9 +50,10 @@ class OpenAI(LLMSource):
     async def generate_response(
         self, invoker: discord.User = None, _retry_count=0
     ) -> str:
+        openai.aiosession.set(ClientSession())
         try:
             if not self.use_chat_completion:
-                response = openai.Completion.create(
+                response = await openai.Completion.acreate(
                     model=self.config.openai_model,
                     prompt=await self.get_context_gpt3(invoker),
                     stop="$$$",
@@ -59,10 +63,11 @@ class OpenAI(LLMSource):
                     temperature=self.config.llm_temperature,
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
+                    request_timeout=15,
                 )
                 response = response.choices[0].text.strip()
             else:
-                response = openai.ChatCompletion.create(
+                response = await openai.ChatCompletion.acreate(
                     model=self.config.openai_model,
                     max_tokens=None
                     if self.config.llm_max_tokens == 0
@@ -71,8 +76,10 @@ class OpenAI(LLMSource):
                     temperature=self.config.llm_temperature,
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
+                    request_timeout=15
                 )
                 response = response.choices[0].message.content.strip()
+            await openai.aiosession.get().close()
             return response
         except openai.error.APIConnectionError as e:
             # https://github.com/openai/openai-python/issues/371
