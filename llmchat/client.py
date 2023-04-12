@@ -147,7 +147,7 @@ class DiscordClient(discord.Client):
         else:
             logger.critical(f"Unknown LLM: {self.config.bot_llm}")
 
-        self.change_presence(activity=discord.Game(name=self.llm.current_model_name))
+        await self.change_presence(activity=discord.Game(name=self.llm.current_model_name))
         logger.info(f"Current model: {self.llm.current_model_name}")
 
     async def retry_last_message(self, ctx: Interaction):
