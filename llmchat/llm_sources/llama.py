@@ -71,7 +71,7 @@ class LLaMA(LLMSource):
                 context += f"{name}: {content}"
             context += "\n$$$\n"
 
-        if self.config.bot_reminder:
+        if len(self.config.bot_reminder):
             context += f"Reminder: {self.config.bot_reminder}\n"
 
         context += f"{self.config.bot_name}: "

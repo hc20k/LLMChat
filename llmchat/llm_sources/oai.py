@@ -111,7 +111,7 @@ class OpenAI(LLMSource):
                 context += f"{name}: {content}"
             context += "\n$$$\n"
 
-        if self.config.bot_reminder:
+        if len(self.config.bot_reminder):
             context += f"Reminder: {self.config.bot_reminder}\n"
 
         context += f"{self.config.bot_name}: "
@@ -148,7 +148,7 @@ class OpenAI(LLMSource):
         )
         ret.insert(0, {"role": "system", "content": initial})
 
-        if self.config.bot_reminder:
+        if len(self.config.bot_reminder):
             ret.append({"role": "system", "content": f"Reminder: {self.config.bot_reminder}"})
 
         logger.debug(str(ret))

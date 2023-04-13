@@ -326,9 +326,7 @@ class DiscordClient(discord.Client):
                 this.config.bot_name = self.children[0].value
                 await interaction.guild.me.edit(nick=this.config.bot_name)
                 this.config.bot_identity = self.children[1].value
-
-                if self.children[2].value:
-                    this.config.bot_reminder = self.children[2].value
+                this.config.bot_reminder = self.children[2].value
 
                 await interaction.response.send_message("Changes committed.", delete_after=3)
 
