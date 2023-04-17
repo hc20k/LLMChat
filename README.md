@@ -59,4 +59,5 @@ python main.py
 - `/model` - Allows you to change the current model. If you're in OpenAI mode, it will allow you to select from the OpenAI models. If you're in LLaMA mode, it will allow you to select a file from the `LLaMA.search_path` folder.
 - `/retry` - Allows you to re-infer the last message, in case you didn't like it.
 - `/system [message]` - Allows you to send a message as the `system` role. Only supported for OpenAI models >= gpt-3.5-turbo.
+- `/reload_config` - Reloads all of the settings in the config.ini.
 - `/message_context_count` - (default 20) Sets the amount of messages that are sent to the AI for context. Increasing this number will increase the amount of tokens you'll use.

@@ -89,6 +89,13 @@ class DiscordClient(discord.Client):
                 callback=self.set_message_context_count,
             )
         )
+        self.tree.add_command(
+            app_commands.Command(
+                name="reload_config",
+                description="Reloads the settings from config.ini.",
+                callback=self.reload_config,
+            )
+        )
 
         # setup TTS fields
         self.eleven = None
@@ -150,13 +157,43 @@ class DiscordClient(discord.Client):
         await self.change_presence(activity=discord.Game(name=self.llm.current_model_name))
         logger.info(f"Current model: {self.llm.current_model_name}")
 
+    async def reload_config(self, ctx: Interaction):
+        await ctx.response.defer()
+
+        prev_llm, prev_blip, prev_tts, prev_speech = self.config.bot_llm, self.config.bot_blip_enabled, self.config.bot_tts_service, self.config.bot_speech_recognition_service
+        self.config.load()
+        # manually load new settings if necessary
+        if prev_llm != self.config.bot_llm:
+            await self.setup_llm()
+        if prev_blip != self.config.bot_blip_enabled:
+            if not self.config.bot_blip_enabled:
+                del self.blip
+                self.blip = None
+            else:
+                self.blip = BLIP()
+        if prev_tts != self.config.bot_tts_service:
+            self.setup_tts()
+        if prev_speech != self.config.bot_speech_recognition_service:
+            if prev_speech == "whisper":
+                del self.whisper
+                self.whisper = None
+            else:
+                logger.info("Loading whisper model...")
+                self.whisper: whisper.Whisper = whisper.load_model(
+                    "base", download_root="models/whisper/"
+                )
+
+        logger.info("Config reloaded.")
+        await ctx.followup.send(content="Config reloaded.")
+
     async def retry_last_message(self, ctx: Interaction):
         history_item = self.db.last
+        await ctx.response.defer()
+
         if not history_item:
             response = await self.llm.generate_response(ctx.user)
-            sent_message = await ctx.channel.send(response)
+            sent_message = await ctx.followup.send(content=response)
             self.db.append(sent_message)
-            await ctx.response.send_message("Done!", delete_after=0.1)
             return
 
         author_id, content, message_id = history_item
@@ -165,16 +202,16 @@ class DiscordClient(discord.Client):
         if author_id != self.user.id:
             # not from me
             response = await self.llm.generate_response(ctx.user)
-            sent_message = await ctx.channel.send(response)
+            sent_message = await ctx.followup.send(content=response)
             self.db.append(sent_message)
         else:
+            delete_me = await ctx.followup.send(content="Retrying...", silent=True)
+            await delete_me.delete()
             await last_message.edit(content="*Retrying...*")
             self.db.remove(last_message.id)
             response = await self.llm.generate_response(ctx.user)
             await last_message.edit(content=response)
             self.db.append(last_message)
-
-        await ctx.response.send_message("Message retried.", delete_after=0.5)
 
     async def set_message_context_count(self, ctx: Interaction, count: int):
         self.config.llm_context_messages_count = count
