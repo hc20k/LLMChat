@@ -189,7 +189,7 @@ class Config:
 
     @property
     def bot_initial_prompt(self):
-        return self._config.get("Bot", "initial_prompt")
+        return self._config.get("Bot", "initial_prompt", fallback="Write {bot_name}'s next reply in a fictional chat between {bot_name} and {user_name}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition. {bot_identity} {user_identity}")
 
     @bot_initial_prompt.setter
     def bot_initial_prompt(self, initial_prompt):
