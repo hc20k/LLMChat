@@ -12,7 +12,7 @@ reg_formatter = logging.Formatter(
     "%(asctime)s - %(module)s - %(levelname)s - %(message)s"
 )
 
-file_handler = logging.FileHandler("../debug.log")
+file_handler = logging.FileHandler("debug.log")
 file_handler.setLevel(log_level)
 file_handler.setFormatter(reg_formatter)
 
@@ -22,5 +22,5 @@ console_handler.setFormatter(color_formatter)
 
 if not logger.handlers:
     # add the file handler to the logger
-    # logger.addHandler(file_handler)
+    logger.addHandler(file_handler)
     logger.addHandler(console_handler)

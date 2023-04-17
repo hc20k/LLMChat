@@ -188,6 +188,15 @@ class Config:
         self.save()
 
     @property
+    def bot_initial_prompt(self):
+        return self._config.get("Bot", "initial_prompt")
+
+    @bot_initial_prompt.setter
+    def bot_initial_prompt(self, initial_prompt):
+        self._config.set("Bot", "initial_prompt", initial_prompt)
+        self.save()
+
+    @property
     def llm_temperature(self) -> float:
         return self._config.getfloat("LLM", "temperature")
 

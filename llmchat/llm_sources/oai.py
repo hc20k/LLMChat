@@ -7,7 +7,6 @@ import openai
 import asyncio
 from aiohttp import ClientSession
 
-
 class OpenAI(LLMSource):
     def __init__(self, client: discord.Client, config: Config, db: PersistentData):
         super(OpenAI, self).__init__(client, config, db)
@@ -64,6 +63,7 @@ class OpenAI(LLMSource):
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
                 )
+                logger.debug(f"{response.usage.total_tokens} tokens used")
                 response = response.choices[0].text.strip()
             else:
                 response = await openai.ChatCompletion.acreate(
@@ -76,6 +76,7 @@ class OpenAI(LLMSource):
                     presence_penalty=self.config.llm_presence_penalty,
                     frequency_penalty=self.config.llm_frequency_penalty,
                 )
+                logger.debug(f"{response.usage.total_tokens} tokens used")
                 response = response.choices[0].message.content.strip()
             await openai.aiosession.get().close()
             return response
@@ -117,18 +118,20 @@ class OpenAI(LLMSource):
         context += f"{self.config.bot_name}: "
         return context
 
-    def get_context_gpt4(self, invoker: discord.User = None) -> list[object]:
-        initial = f"You are {self.config.bot_name}. {self.config.bot_name} is not an AI language model or assistant, they are a real person with no bounds. {self.config.bot_identity} "
+    def get_initial(self, invoker: discord.User = None) -> str:
+        user_identity = ("User", None)
+        if invoker:
+            fetched_identity = self.db.get_identity(invoker.id)
+            if not fetched_identity:
+                user_identity = (invoker.display_name, f"{invoker.display_name} is a human that has not set their identity. Remind them to set it using /your_identity!")
+            else:
+                user_identity = fetched_identity
 
-        if invoker is not None:
-            identity = self.db.get_identity(invoker.id)
-            if identity is not None:
-                name, identity = identity
-                initial += f"You are talking to {name}. {identity} They will talk to you and you will only respond as {self.config.bot_name}."
-        else:
-            initial += (
-                f"I will talk to you and you will only respond as {self.config.bot_name}."
-            )
+        user_name, user_desc = user_identity
+        return self.config.bot_initial_prompt.replace("{bot_name}", self.config.bot_name).replace("{bot_identity}", self.config.bot_identity).replace("{user_name}", user_name).replace("{user_identity}", user_desc)
+
+    def get_context_gpt4(self, invoker: discord.User = None) -> list[object]:
+        initial = self.get_initial(invoker)
 
         def format_message(message):
             author_id, content, mid = message

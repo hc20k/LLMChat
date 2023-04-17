@@ -9,12 +9,12 @@ from discord.interactions import Interaction
 
 from blip import BLIP
 from config import Config
+from logger import logger, console_handler, color_formatter
 
 # models
 from llm_sources import LLMSource
 from llm_sources.llama import LLaMA
 from llm_sources.oai import OpenAI
-from logger import logger, console_handler, color_formatter
 from persistence import PersistentData
 from voice_support import BufferAudioSink
 
@@ -252,7 +252,7 @@ class DiscordClient(discord.Client):
     async def set_your_identity(self, ctx: Interaction):
         this = self
 
-        name, desc = self.db.get_identity(ctx.user.id)
+        name, desc = self.db.get_identity(ctx.user.id) or (None, None)
 
         class IdentityModal(discord.ui.Modal):
             def __init__(self, *args, **kwargs) -> None:
@@ -428,7 +428,16 @@ class DiscordClient(discord.Client):
             try:
                 response = await self.llm.generate_response(invoker=message.author)
             except Exception as e:
-                await message.channel.send(f"Exception thrown while trying to generate message:\n```{str(e)}```")
+                view = discord.ui.View()
+                retry_btn = discord.ui.Button(label="Retry")
+                async def _retry(interaction: Interaction):
+                    await interaction.message.delete(delay=2)
+                    await self.on_message(message)
+
+                retry_btn.callback = _retry
+                view.add_item(retry_btn)
+
+                await message.channel.send(f"Exception thrown while trying to generate message:\n```{str(e)}```", view=view)
 
                 # since it failed remove the message
                 self.db.remove(message.id)

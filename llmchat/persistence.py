@@ -73,7 +73,7 @@ class PersistentData:
             "SELECT name,identity FROM user_identities WHERE user_id = ?", (user_id,)
         )
         row = self.cursor.fetchone()
-        return row if row is not None else (None, None)
+        return row
 
     @property
     def last(self):
