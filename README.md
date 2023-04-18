@@ -30,6 +30,9 @@ If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to
 Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`
 
 ### Possible field values:
+`Discord.active_channels` (a list of text and voice channel ids the bot should interact with, seperated by commas):
+- *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
+
 `Bot.speech_recognition_service`:
  - `whisper` - run OpenAI's Whisper locally. (Free)
  - `google` - use Google's online transcription service. (Free)

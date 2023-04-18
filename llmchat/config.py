@@ -107,6 +107,28 @@ class Config:
         self.save()
 
     @property
+    def discord_active_channels(self) -> list[int]:
+        comma_sep_channels = self._config.get("Discord", "active_channels", fallback=None)
+        if not comma_sep_channels:
+            return []
+        return [int(v.strip()) for v in comma_sep_channels.split(",")]
+
+    @discord_active_channels.setter
+    def discord_active_channels(self, active_channels: list[int]):
+        self._config.set("Discord", "active_channels", ",".join([str(v) for v in active_channels]))
+        self.save()
+
+    def can_interact_with_channel_id(self, channel_id: int) -> bool:
+        comma_sep_channels = self._config.get("Discord", "active_channels", fallback=None)
+        # if active_channels is "all", it will reply to all
+        if comma_sep_channels == "all":
+            return True
+        elif not comma_sep_channels:
+            return False
+
+        return channel_id in [int(v.strip()) for v in comma_sep_channels.split(",")]
+
+    @property
     def llama_model_name(self) -> str:
         return self._config.get("LLaMA", "model_name")
 

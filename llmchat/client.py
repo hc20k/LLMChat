@@ -23,6 +23,13 @@ class DiscordClient(discord.Client):
     def __init__(self, config: Config):
         self.config = config
 
+        if not self.config.can_interact_with_channel_id(-1) and not self.config.discord_active_channels:
+            raise Exception("There aren't any active channels specified in your config.ini! Please add text/voice channel ids to Discord.active_channels (seperated by commas),"
+                            " or set Discord.active_channels to \"all\" and the bot will interact with all channels.")
+
+        if self.config.can_interact_with_channel_id(-1):
+            logger.warn("Discord.active_channels = \"all\", bot will interact with every channel!")
+
         intents = discord.Intents.default()
         intents.message_content = True
         super(DiscordClient, self).__init__(intents=intents)
@@ -424,7 +431,7 @@ class DiscordClient(discord.Client):
         before: discord.VoiceState,
         after: discord.VoiceState,
     ):
-        if after.channel and len(self.voice_clients) == 0:
+        if after.channel and after.channel.id in self.config.discord_active_channels and len(self.voice_clients) == 0:
             vc: discord.VoiceClient = await after.channel.connect()
             self.sink = BufferAudioSink(
                 self.on_speech, self.on_speech_error, self.whisper
@@ -442,8 +449,8 @@ class DiscordClient(discord.Client):
         self.db.edit(payload.message_id, payload.data["content"])
 
     async def on_message(self, message: discord.Message):
-        if message.author.id == self.user.id:
-            # from me
+        if message.author.id == self.user.id or message.channel.id not in self.config.discord_active_channels:
+            # from me or not allowed in channel
             return
 
         if self.config.bot_blip_enabled:
