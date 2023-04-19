@@ -1,6 +1,8 @@
+import asyncio
+import subprocess
+
 import azure.cognitiveservices.speech as speechsdk
 import discord
-import elevenlabslib as ell
 import requests
 import whisper
 from PIL import Image
@@ -18,6 +20,8 @@ from llm_sources.oai import OpenAI
 from persistence import PersistentData
 from voice_support import BufferAudioSink
 
+# tts
+from tts_sources import TTSSource
 
 class DiscordClient(discord.Client):
     def __init__(self, config: Config):
@@ -72,7 +76,7 @@ class DiscordClient(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
-                name="model", description="Changes the LLM.", callback=self.set_model
+                name="model", description="Allows you to change the LLM and voice model.", callback=self.set_model
             )
         )
         self.tree.add_command(
@@ -105,12 +109,7 @@ class DiscordClient(discord.Client):
         )
 
         # setup TTS fields
-        self.eleven = None
-        self.speech_config = None
-        self.audio_config = None
-        self.speech_synthesizer = None
-        self.setup_tts()
-
+        self.tts: TTSSource = None
         self.llm: LLMSource = None
 
         if self.config.bot_speech_recognition_service == "whisper":
@@ -134,22 +133,21 @@ class DiscordClient(discord.Client):
             log_formatter=color_formatter,
         )
 
-    def setup_tts(self):
+    async def setup_tts(self):
+        logger.info(f"TTS: {self.config.bot_tts_service}")
+        params = [self, self.config, self.db]
+
         if self.config.bot_tts_service == "elevenlabs":
-            logger.info("Logging into ElevenLabs...")
-            self.eleven = ell.ElevenLabsUser(self.config.elevenlabs_key)
+            from tts_sources.elevenlabs import ElevenLabs
+            self.tts = ElevenLabs(*params)
         elif self.config.bot_tts_service == "azure":
-            logger.info("Logging into Azure...")
-            self.speech_config = speechsdk.SpeechConfig(
-                subscription=self.config.azure_key, region=self.config.azure_region
-            )
-            self.audio_config = speechsdk.audio.AudioOutputConfig(
-                filename="../temp.wav"
-            )
-            self.speech_config.speech_synthesis_voice_name = self.config.azure_voice
-            self.speech_synthesizer = speechsdk.SpeechSynthesizer(
-                speech_config=self.speech_config, audio_config=self.audio_config
-            )
+            from tts_sources.azure import Azure
+            self.tts = Azure(*params)
+        elif self.config.bot_tts_service == "silero":
+            from tts_sources.silero import SileroTTS
+            self.tts = SileroTTS(*params)
+        else:
+            logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}")
 
     async def setup_llm(self):
         logger.info(f"LLM: {self.config.bot_llm}")
@@ -179,7 +177,7 @@ class DiscordClient(discord.Client):
             else:
                 self.blip = BLIP()
         if prev_tts != self.config.bot_tts_service:
-            self.setup_tts()
+            await self.setup_tts()
         if prev_speech != self.config.bot_speech_recognition_service:
             if prev_speech == "whisper":
                 del self.whisper
@@ -277,11 +275,27 @@ class DiscordClient(discord.Client):
                 await this.change_presence(activity=discord.Game(name=model))
                 await ctx.response.edit_message(content=f"Model changed to *{self.llm.current_model_name}*", embed=None, delete_after=3)
 
-        select = ModelSelect(self.llm)
-        view = discord.ui.View()
-        view.add_item(select)
+        class VoiceSelect(discord.ui.Select):
+            def __init__(self, tts: TTSSource):
+                self.tts = tts
+                super(VoiceSelect, self).__init__(
+                    options=[discord.SelectOption(
+                        label=m, value=m, default=tts.current_voice_name == m) for m in tts.list_voices()],
+                    placeholder="Select a voice...",
+                )
 
-        await ctx.response.send_message("Select a model:", view=view)
+            async def callback(self, ctx: Interaction):
+                model = ctx.data["values"][0]
+                self.tts.set_voice(model)
+                await ctx.response.edit_message(content=f"Voice changed to *{self.tts.current_voice_name}*", embed=None, delete_after=3)
+
+        llm_select = ModelSelect(self.llm)
+        v_select = VoiceSelect(self.tts)
+        view = discord.ui.View()
+        view.add_item(llm_select)
+        view.add_item(v_select)
+
+        await ctx.response.send_message("Select a model or a voice:", view=view)
 
     async def send_system(self, ctx: Interaction, message: str):
         if self.config.bot_llm == "openai" and self.llm.use_chat_completion:
@@ -381,10 +395,14 @@ class DiscordClient(discord.Client):
     async def on_ready(self):
         logger.info(f"Logged in as {self.user}")
         await self.wait_until_ready()
+        await self.change_presence(activity=discord.Game(name="Loading..."))
+
         self.db: PersistentData = PersistentData(self)
-        await self.setup_llm()
         await self.tree.sync()
+        await self.setup_tts()
+        await self.setup_llm()
         self.event(self.on_voice_state_update)
+        logger.info("Initialization complete.")
 
     async def on_speech(self, speaker_id, speech):
         speaker = discord.utils.get(self.get_all_members(), id=speaker_id)
@@ -392,25 +410,11 @@ class DiscordClient(discord.Client):
         response = await self.llm.generate_response(speaker)
         self.db.speech(self.user, response)
 
-        vc: discord.VoiceClient = self.voice_clients[0]
+        vc: discord.VoiceClient = speaker.guild.voice_client
         vc.stop()
 
-        if self.config.bot_tts_service == "elevenlabs":
-            voice = self.eleven.get_voices_by_name(
-                self.config.elevenlabs_voice)[0]
-
-            logger.debug("Using voice", voice.get_name())
-            data = voice.generate_audio_bytes(response, stability=0.2)
-            with open("../temp_out.wav", "wb") as f:
-                f.write(data)
-                f.close()
-        else:
-            speech = self.speech_synthesizer.speak_text_async(response).get()
-            with open("../temp_out.wav", "wb") as f:
-                f.write(speech.audio_data)
-                f.close()
-        stream = discord.FFmpegPCMAudio("temp_out.wav")
-
+        buf = await self.tts.generate_speech(response)
+        stream = discord.FFmpegOpusAudio(buf, pipe=True)
         self.sink.is_speaking = True
 
         def _after_speaking(_):
@@ -420,36 +424,57 @@ class DiscordClient(discord.Client):
         vc.play(stream, after=_after_speaking)
 
     async def on_speech_error(self):
+        if not self.voice_clients:
+            return
+
         vc: discord.VoiceClient = self.voice_clients[0]
         vc.stop()
         stream = discord.FFmpegPCMAudio("assets/error.wav")
         vc.play(stream)
 
-    async def on_voice_state_update(
-        self,
-        member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState,
-    ):
-        if after.channel and after.channel.id in self.config.discord_active_channels and len(self.voice_clients) == 0:
-            vc: discord.VoiceClient = await after.channel.connect()
-            self.sink = BufferAudioSink(
-                self.on_speech, self.on_speech_error, self.whisper
-            )
-            vc.listen(self.sink)
-        elif member.guild.voice_client:
-            if self.sink:
-                self.sink.cleanup()
-            await member.guild.voice_client.disconnect()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if not before or not after:
+            return
+
+        if not after.channel:
+            # member left channel, check to see if there are any more members there
+            if len(before.channel.members) == 1 and member.guild.voice_client:
+                # leave
+                if self.sink:
+                    self.sink.on_leave()
+                await member.guild.voice_client.disconnect(force=True)
+        elif before.channel is None and after.channel is not None:
+            # member joined channel, join if you haven't already
+            if member.guild.voice_client is None:
+                vc: discord.VoiceClient = await after.channel.connect()
+                if self.config.bot_audiobook_mode:
+                    return
+                self.sink = BufferAudioSink(
+                    self.on_speech, self.on_speech_error, self.whisper
+                )
+                vc.listen(self.sink)
 
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         self.db.remove(payload.message_id)
+
+        message = payload.cached_message
+        if not message:
+            logger.warn("The bot was unable to look for any messages that may have been split from this one! Make sure to delete the parent message to remove it from the history!")
+            return
+
+        channel = self.get_channel(payload.channel_id)
+        while message.reference:
+            reference = await channel.fetch_message(message.reference.message_id)
+            self.db.remove(reference.id)
+            await reference.delete()
+            logger.debug(f"Deleted reference message: {reference.id}")
+            message = reference
 
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         self.db.edit(payload.message_id, payload.data["content"])
 
     async def on_message(self, message: discord.Message):
-        if message.author.id == self.user.id or message.channel.id not in self.config.discord_active_channels:
+        if message.author.id == self.user.id or not self.config.can_interact_with_channel_id(message.channel.id):
             # from me or not allowed in channel
             return
 
@@ -488,5 +513,27 @@ class DiscordClient(discord.Client):
                 raise e
 
         logger.debug(f"Response: {response}")
-        sent_message = await message.channel.send(response)
+
+        # message splitting
+        sent_message: discord.Message = None
+        char_limit = 2000
+        if len(response) < char_limit:
+            sent_message = await message.channel.send(response)
+        else:
+            split_msg = None
+            chunks = [response[i:i+char_limit] for i in range(0, len(response), char_limit)]
+            for c in chunks:
+                split_msg = await message.channel.send(c, reference=split_msg)
+                if not sent_message:
+                    sent_message = split_msg
+                await asyncio.sleep(0.5)
+
+        if self.config.bot_audiobook_mode and message.guild.voice_client:
+            # read the message
+            vc: discord.VoiceClient = message.guild.voice_client
+            buf = await self.tts.generate_speech(response)
+            vc.stop()
+            vc.play(discord.FFmpegPCMAudio(buf, pipe=True))
+
+        assert sent_message
         self.db.append(sent_message)

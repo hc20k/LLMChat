@@ -40,6 +40,7 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
 `Bot.tts_service`:
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)
  - `azure` - use Azure cognitive services for TTS. ($) (Further configuration in the `Azure` section required)
+ - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via PyTorch. (Free) (**STILL BEING IMPLEMENTED**)
 
 `Bot.llm`:
 - `openai` - use the OpenAI API for inference. ($) (Further configuration in the `OpenAI` section required)

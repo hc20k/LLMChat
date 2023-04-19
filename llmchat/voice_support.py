@@ -71,6 +71,7 @@ class BufferAudioSink(discord.AudioSink):
             import sounddevice as sd
             sd.play(np.frombuffer(audio_data.get_raw_data(), dtype='int16'), self.SAMPLE_RATE_HZ)
 
+        # TODO: Put these into seperate files like the TTS and LLM
         if not self.whisper:
             try:
                 result = self.sr.recognize_google(audio_data)
@@ -78,10 +79,10 @@ class BufferAudioSink(discord.AudioSink):
                 asyncio.run(self.on_speech(self.speaker, result))
             except sr.exceptions.TranscriptionFailed:
                 logger.error("Failed to transcribe.")
-                asyncio.run(self.on_error())
+                # asyncio.run(self.on_error())
             except sr.exceptions.UnknownValueError:
                 logger.error("SR doesn't understand.")
-                asyncio.run(self.on_error())
+                # asyncio.run(self.on_error())
             except Exception as e:
                 logger.error("Exception thrown while processing audio. " + str(e))
         else:
@@ -95,9 +96,9 @@ class BufferAudioSink(discord.AudioSink):
             logger.debug("Said " + result)
             asyncio.run(self.on_speech(self.speaker, result))
 
-    def cleanup(self):
+    def on_leave(self):
         logger.debug("Cleaning up")
-        # self.stop_listen(wait_for_stop=True)
+        self.stop_listen(wait_for_stop=True)
 
     def on_rtcp(self, packet: discord.RTCPPacket):
         pass

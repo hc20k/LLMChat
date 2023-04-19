@@ -1,6 +1,6 @@
 openai~=0.27.2
 numpy~=1.23.5
-elevenlabslib~=0.4.0
+elevenlabs
 PyAudio~=0.2.13
 pynacl
 requests~=2.28.2

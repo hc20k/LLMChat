@@ -4,7 +4,7 @@ import configparser
 class Config:
     def __init__(self, path="config.ini"):
         self.path = path
-        self._config = configparser.ConfigParser(allow_no_value=True)
+        self._config = configparser.ConfigParser(comment_prefixes='/', allow_no_value=True)
         self.load()
 
     def load(self):
@@ -153,6 +153,15 @@ class Config:
     @bot_identity.setter
     def bot_identity(self, identity):
         self._config.set("Bot", "identity", identity)
+        self.save()
+
+    @property
+    def bot_audiobook_mode(self) -> bool:
+        return self._config.getboolean("Bot", "audiobook_mode")
+
+    @bot_audiobook_mode.setter
+    def bot_audiobook_mode(self, enabled):
+        self._config.set("Bot", "audiobook_mode", "true" if enabled else "false")
         self.save()
 
     @property
