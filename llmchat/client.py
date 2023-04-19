@@ -398,9 +398,9 @@ class DiscordClient(discord.Client):
         await self.change_presence(activity=discord.Game(name="Loading..."))
 
         self.db: PersistentData = PersistentData(self)
-        await self.tree.sync()
         await self.setup_tts()
         await self.setup_llm()
+        await self.tree.sync()
         self.event(self.on_voice_state_update)
         logger.info("Initialization complete.")
 
