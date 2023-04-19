@@ -12,13 +12,11 @@ from discord.interactions import Interaction
 from blip import BLIP
 from config import Config
 from logger import logger, console_handler, color_formatter
+from voice_support import BufferAudioSink
+from persistence import PersistentData
 
 # models
 from llm_sources import LLMSource
-from llm_sources.llama import LLaMA
-from llm_sources.oai import OpenAI
-from persistence import PersistentData
-from voice_support import BufferAudioSink
 
 # tts
 from tts_sources import TTSSource
@@ -153,8 +151,10 @@ class DiscordClient(discord.Client):
         logger.info(f"LLM: {self.config.bot_llm}")
         params = [self, self.config, self.db]
         if self.config.bot_llm == "openai":
+            from llm_sources.oai import OpenAI
             self.llm = OpenAI(*params)
         elif self.config.bot_llm == "llama":
+            from llm_sources.llama import LLaMA
             self.llm = LLaMA(*params)
         else:
             logger.critical(f"Unknown LLM: {self.config.bot_llm}")
