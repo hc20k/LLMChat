@@ -134,6 +134,9 @@ class DiscordClient(discord.Client):
         elif self.config.bot_tts_service == "silero":
             from tts_sources.silero import SileroTTS
             self.tts = SileroTTS(*params)
+        elif self.config.bot_tts_service == "bark":
+            from tts_sources.bark import Bark
+            self.tts = Bark(*params)
         else:
             logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}")
 
