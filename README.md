@@ -1,4 +1,5 @@
-# LLMChat
+# LLMChat (dev)
+## This is the development channel. It will probably be spammed with commits and may not work!
 ### A Discord chatbot that uses GPT-4 (or 3.5, or 3, or LLaMA) for text generation and ElevenLabs (or Azure TTS) for voice chat.
 *Tested with Python 3.9*
 
