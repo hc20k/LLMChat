@@ -18,15 +18,12 @@ class Azure(TTSSource):
         self.speech_config = speechsdk.SpeechConfig(
             subscription=self.config.azure_key, region=self.config.azure_region
         )
-        fake_stream = speechsdk.audio.PushAudioOutputStreamCallback()  # I tried to make a stream callback that wrote to a io.BytesIO but that didn't work for some reason
-        stream = speechsdk.audio.PushAudioOutputStream(fake_stream)
-        self.audio_config = speechsdk.audio.AudioOutputConfig(stream=stream)
-        self.synthesizer = speechsdk.speech.SpeechSynthesizer(self.speech_config, self.audio_config)
+        self.synthesizer = speechsdk.speech.SpeechSynthesizer(self.speech_config, None)
 
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
         self.speech_config.speech_synthesis_voice_name = self.config.azure_voice
-        self.synthesizer = speechsdk.speech.SpeechSynthesizer(self.speech_config, self.audio_config)
-        result: speechsdk.SpeechSynthesisResult = self.synthesizer.speak_text(content)
+        self.synthesizer = speechsdk.speech.SpeechSynthesizer(self.speech_config, None)
+        result: speechsdk.SpeechSynthesisResult = await self.client.loop.run_in_executor(None, lambda: self.synthesizer.speak_text(content))
         buf = io.BytesIO(result.audio_data)
         return buf
 

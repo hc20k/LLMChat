@@ -1,11 +1,12 @@
 from . import TTSSource
 from elevenlabs import generate, get_all_voices
 import io
+import asyncio
 
 
 class ElevenLabs(TTSSource):
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
-        data = generate(content, self.config.elevenlabs_key, voice=self.config.elevenlabs_voice)
+        data = await self.client.loop.run_in_executor(None, lambda: generate(content, self.config.elevenlabs_key, voice=self.config.elevenlabs_voice))
         buf = io.BytesIO(data)
         return buf
 

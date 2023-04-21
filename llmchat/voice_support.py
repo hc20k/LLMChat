@@ -1,10 +1,10 @@
 import discord
 import speech_recognition as sr
 import pyaudio
-import whisper
 import numpy as np
 import asyncio
 from logger import logger
+from sr_sources import SRSource
 
 class DummyAudioSource(sr.AudioSource):
     class DummyStream(object):
@@ -40,9 +40,11 @@ class DummyAudioSource(sr.AudioSource):
 
 
 class BufferAudioSink(discord.AudioSink):
-    def __init__(self, on_speech, on_error, whisper_ctx):
+    sr_source: SRSource
+    def __init__(self, sr_source: SRSource, on_speech, loop: asyncio.BaseEventLoop):
         self.on_speech = on_speech
-        self.on_error = on_error
+        self.sr_source = sr_source
+        self.loop = loop
 
         self.NUM_CHANNELS = discord.opus.Decoder.CHANNELS
         self.NUM_SAMPLES = discord.opus.Decoder.SAMPLES_PER_FRAME
@@ -60,10 +62,8 @@ class BufferAudioSink(discord.AudioSink):
         self.sr.pause_threshold = 0.3
         self.stop_listen = self.sr.listen_in_background(self.stream, self.listen)
 
-        self.whisper: whisper.Whisper = whisper_ctx
-
     def listen(self, _, audio_data: sr.AudioData):
-        if self.is_speaking:
+        if self.is_speaking or not self.speaker:
             return
 
         debug = False
@@ -71,34 +71,17 @@ class BufferAudioSink(discord.AudioSink):
             import sounddevice as sd
             sd.play(np.frombuffer(audio_data.get_raw_data(), dtype='int16'), self.SAMPLE_RATE_HZ)
 
-        # TODO: Put these into seperate files like the TTS and LLM
-        if not self.whisper:
-            try:
-                result = self.sr.recognize_google(audio_data)
-                logger.debug("Said " + str(result))
-                asyncio.run(self.on_speech(self.speaker, result))
-            except sr.exceptions.TranscriptionFailed:
-                logger.error("Failed to transcribe.")
-                # asyncio.run(self.on_error())
-            except sr.exceptions.UnknownValueError:
-                logger.error("SR doesn't understand.")
-                # asyncio.run(self.on_error())
-            except Exception as e:
-                logger.error("Exception thrown while processing audio. " + str(e))
-        else:
-            audio = np.frombuffer(audio_data.get_raw_data(convert_rate=whisper.audio.SAMPLE_RATE),
-                                  np.int16).flatten().astype(np.float32) / 32768.0
-            audio = whisper.pad_or_trim(audio)
-            result = whisper.transcribe(self.whisper, audio=audio, language="en")
-            result = result["text"].lstrip()
-            if len(result) == 0:
-                return
-            logger.debug("Said " + result)
-            asyncio.run(self.on_speech(self.speaker, result))
+        try:
+            result = self.sr_source.recognize_speech(audio_data)
+            if result is not None:
+                logger.info(f"Said: {result}")
+                self.loop.create_task(self.on_speech(self.speaker, result))
+        except Exception as e:
+            logger.warn("Exception thrown while processing audio. " + str(e))
 
     def on_leave(self):
         logger.debug("Cleaning up")
-        self.stop_listen(wait_for_stop=True)
+        self.stop_listen()
 
     def on_rtcp(self, packet: discord.RTCPPacket):
         pass

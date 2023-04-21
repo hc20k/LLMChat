@@ -25,6 +25,8 @@ Install the dependencies:
 pip install -r requirements.txt
 ```
 
+Install `ffmpeg` if you want to use voice chat.
+
 If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to install PyTorch as well. [Directions here.](https://pytorch.org/get-started/locally/)
 
 Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`

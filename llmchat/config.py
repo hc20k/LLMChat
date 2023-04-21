@@ -262,3 +262,12 @@ class Config:
     def llm_frequency_penalty(self, frequency_penalty):
         self._config.set("LLM", "frequency_penalty", frequency_penalty)
         self.save()
+
+    @property
+    def silero_voice(self) -> str:
+        return self._config.get("Silero", "voice", fallback="en_107")
+
+    @silero_voice.setter
+    def silero_voice(self, voice):
+        self._config.set("Silero", "voice", voice)
+        self.save()

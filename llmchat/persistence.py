@@ -36,10 +36,10 @@ class PersistentData:
         self.connection.commit()
         self.create_table()
 
-    def append(self, message: discord.Message):
+    def append(self, message: discord.Message, override_content: str = None):
         self.cursor.execute(
             "INSERT INTO message_history VALUES (?, ?, ?)",
-            (message.author.id, message.content, message.id),
+            (message.author.id, message.content if override_content is None else override_content, message.id),
         )
         self.connection.commit()
 
