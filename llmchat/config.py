@@ -271,3 +271,30 @@ class Config:
     def silero_voice(self, voice):
         self._config.set("Silero", "voice", voice)
         self.save()
+
+    @property
+    def playht_secret_key(self) -> str:
+        return self._config.get("Play.ht", "secret_key")
+
+    @playht_secret_key.setter
+    def playht_secret_key(self, secret_key):
+        self._config.set("Play.ht", "secret_key", secret_key)
+        self.save()
+
+    @property
+    def playht_user_id(self) -> str:
+        return self._config.get("Play.ht", "user_id")
+
+    @playht_user_id.setter
+    def playht_user_id(self, user_id):
+        self._config.set("Play.ht", "user_id", user_id)
+        self.save()
+
+    @property
+    def playht_voice_id(self) -> str:
+        return self._config.get("Play.ht", "voice_id", fallback="charlotte")
+
+    @playht_voice_id.setter
+    def playht_voice_id(self, voice_id):
+        self._config.set("Play.ht", "voice_id", voice_id)
+        self.save()

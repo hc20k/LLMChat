@@ -8,3 +8,4 @@ from client import DiscordClient
 if __name__ == "__main__":
     config = Config()
     client = DiscordClient(config)
+    

@@ -1,5 +1,4 @@
 # LLMChat (dev)
-## This is the development channel. It will probably be spammed with commits and may not work!
 ### A Discord chatbot that uses GPT-4 (or 3.5, or 3, or LLaMA) for text generation and ElevenLabs (or Azure TTS) for voice chat.
 *Tested with Python 3.9*
 
@@ -24,9 +23,18 @@
 Install the dependencies:
 ```bash
 pip install -r requirements.txt
+
+# for voice support (ElevenLabs, bark, Azure, whisper)
+pip install -r optional/voice-requirements.txt
+
+# for BLIP support
+pip install -r optional/blip-requirements.txt
+
+# for LLaMA support
+pip install -r optional/llama-requirements.txt
 ```
 
-Install `ffmpeg` if you want to use voice chat.
+### Install `ffmpeg` if you want to use voice chat.
 
 If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to install PyTorch as well. [Directions here.](https://pytorch.org/get-started/locally/)
 
@@ -44,6 +52,7 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)
  - `azure` - use Azure cognitive services for TTS. ($) (Further configuration in the `Azure` section required)
  - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via PyTorch. (Free) (**STILL BEING IMPLEMENTED**)
+ - `play.ht` - uses [Play.ht](https://play.ht/) for text generation. API key needed. ($)
 
 `Bot.llm`:
 - `openai` - use the OpenAI API for inference. ($) (Further configuration in the `OpenAI` section required)

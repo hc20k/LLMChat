@@ -3,7 +3,6 @@ import io
 import subprocess
 import discord
 import requests
-import whisper
 from PIL import Image
 from typing import Union
 from discord import app_commands
@@ -26,7 +25,7 @@ class DiscordClient(discord.Client):
     sr: SRSource = None
     db: PersistentData
     blip: BLIP
-    sink: BufferAudioSink
+    sink: BufferAudioSink = None
 
     def __init__(self, config: Config):
         self.config = config
@@ -137,6 +136,9 @@ class DiscordClient(discord.Client):
         elif self.config.bot_tts_service == "bark":
             from tts_sources.bark import Bark
             self.tts = Bark(*params)
+        elif self.config.bot_tts_service == "play.ht":
+            from tts_sources.playht import PlayHt
+            self.tts = PlayHt(*params)
         else:
             logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}")
 
@@ -184,14 +186,9 @@ class DiscordClient(discord.Client):
         if prev_tts != self.config.bot_tts_service:
             await self.setup_tts()
         if prev_speech != self.config.bot_speech_recognition_service:
-            if prev_speech == "whisper":
-                del self.whisper
-                self.whisper = None
-            else:
-                logger.info("Loading whisper model...")
-                self.whisper: whisper.Whisper = whisper.load_model(
-                    "base", download_root="models/whisper/"
-                )
+            del self.sr
+            self.sr = None
+            await self.setup_sr()
 
         logger.info("Config reloaded.")
         await ctx.followup.send(content="Config reloaded.")
@@ -314,10 +311,11 @@ class DiscordClient(discord.Client):
         class VoiceSelect(discord.ui.Select):
             def __init__(self, tts: TTSSource):
                 self.tts = tts
+                voices = tts.list_voices()
                 super(VoiceSelect, self).__init__(
                     options=[discord.SelectOption(
-                        label=m, value=m, default=tts.current_voice_name == m) for m in tts.list_voices()[:25]],
-                    placeholder="Select a voice...",
+                        label=m, value=m, default=tts.current_voice_name == m) for m in voices[:25]],
+                    placeholder="Select a voice... "+"(Only 25 shown)" if len(voices) > 25 else "",
                 )
 
             async def callback(self, ctx: Interaction):
@@ -440,6 +438,9 @@ class DiscordClient(discord.Client):
 
         self.db: PersistentData = PersistentData(self)
         await self.setup_llm()
+        await self.setup_tts()
+        await self.setup_sr()
+
         await self.tree.sync()
         self.event(self.on_voice_state_update)
         logger.info("Initialization complete.")
@@ -473,19 +474,13 @@ class DiscordClient(discord.Client):
                 # leave
                 if self.sink:
                     self.sink.on_leave()
-                if self.sr:
-                    del self.sr
-                    self.sr = None
                 await member.guild.voice_client.disconnect(force=True)
         elif before.channel is None and after.channel is not None:
             # member joined channel, join if you haven't already
             if member.guild.voice_client is None:
-                await self.setup_tts()
                 vc: discord.VoiceClient = await after.channel.connect()
                 if self.config.bot_audiobook_mode:
                     return
-                if not self.sr:
-                    await self.setup_sr()
                 self.sink = BufferAudioSink(self.sr, self.on_speech, self.loop)
                 vc.listen(self.sink)
 
