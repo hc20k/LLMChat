@@ -52,17 +52,23 @@ class PlayHt(TTSSource):
         data = await self.client.loop.run_in_executor(None, lambda: requests.get(audio_url))
         return io.BytesIO(data.content)
 
-    def list_voices(self) -> list[str]:
+    def _get_all_voices(self):
+        r = requests.get(f"{PLAYHT_API}/cloned-voices",
+            headers=self.auth_headers | {
+                "Accept": "application/json"
+            })
+        cloned_voices = r.json()
         r = requests.get(f"{PLAYHT_API}/voices",
             headers=self.auth_headers | {
                 "Accept": "application/json"
             })
-        j = r.json()
-        return [v["id"] for v in j]
-        
+        premade_voices = r.json()
+        return cloned_voices + premade_voices
+    def list_voices(self) -> list[str]:
+        return [v["id"] for v in self._get_all_voices()]
 
-    def set_voice(self, voice_id: str) -> None:
-        self.config.playht_voice_id = voice_id
+    def set_voice(self, voice_name: str) -> None:
+        self.config.playht_voice_id = voice_name
 
     @property
     def current_voice_name(self) -> str:

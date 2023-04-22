@@ -47,13 +47,7 @@ class LLaMA(LLMSource):
         self.load_model()
 
     async def get_context(self, invoker: discord.User = None):
-        context = "This is a text conversation. Each message is separated by a new line followed by '$$$'.\n"
-        context += self.config.bot_identity + "\n"
-
-        identity = self.db.get_identity(invoker.id)
-        if identity is not None:
-            name, identity = identity
-            context += identity + "\n"
+        context = self.get_initial(invoker).strip() + " Each message is separated by a new line followed by '$$$'.\n"
 
         for i in self.db.get_recent_messages(self.config.llm_context_messages_count):
             author_id, content, message_id = i
@@ -71,7 +65,7 @@ class LLaMA(LLMSource):
                 context += f"{name}: {content}"
             context += "\n$$$\n"
 
-        if len(self.config.bot_reminder):
+        if self.config.bot_reminder:
             context += f"Reminder: {self.config.bot_reminder}\n"
 
         context += f"{self.config.bot_name}: "

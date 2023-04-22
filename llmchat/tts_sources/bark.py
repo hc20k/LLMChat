@@ -7,9 +7,23 @@ from llmchat.config import Config
 from llmchat.persistence import PersistentData
 from llmchat.logger import logger
 from bark import SAMPLE_RATE, generate_audio, preload_models
-import asyncio
+from bark.generation import models
+from scipy.io.wavfile import write as write_wav
+import os
 
 bark.generation.CACHE_DIR = "models/bark/"
+bark.generation.REMOTE_MODEL_PATHS = {
+    "text": {
+        "path": os.environ.get("SUNO_TEXT_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "text.pt"))
+    },
+    "coarse": {
+        "path": os.environ.get("SUNO_COARSE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "coarse.pt"))
+    },
+    "fine": {
+        "path": os.environ.get("SUNO_FINE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "fine.pt"))
+    }
+}
+
 
 class Bark(TTSSource):
     def __init__(self, client: Client, config: Config, db: PersistentData):
@@ -18,7 +32,15 @@ class Bark(TTSSource):
 
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
         data = await self.client.loop.run_in_executor(None, lambda: generate_audio(content))
-        return io.BytesIO(data.tobytes())
+        buf = io.BytesIO()
+        write_wav(buf, SAMPLE_RATE, data)
+        return buf
 
     def list_voices(self) -> list[str]:
         return []
+
+    def __del__(self):
+        logger.info("Unloading models...")
+        for m in models:
+            model = models[m]
+            del model

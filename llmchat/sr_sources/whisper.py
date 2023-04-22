@@ -6,6 +6,7 @@ from speech_recognition import AudioData
 import whisper
 from llmchat.logger import logger
 import numpy as np
+from torch.cuda import empty_cache
 
 class Whisper(SRSource):
     def __init__(self, client: Client, config: Config, db: PersistentData):
@@ -23,5 +24,6 @@ class Whisper(SRSource):
         logger.debug("Said " + result)
         return result
 
-    def unload(self):
+    def __del__(self):
         del self.model
+        empty_cache()

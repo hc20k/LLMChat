@@ -55,8 +55,8 @@ class OpenAI(LLMSource):
                 response = await openai.Completion.acreate(
                     model=self.config.openai_model,
                     prompt=await self.get_context_gpt3(invoker),
-                    stop="$$$",
-                    max_tokens=None
+                    stop="\n$$$",
+                    max_tokens=400
                     if self.config.llm_max_tokens == 0
                     else self.config.llm_max_tokens,
                     temperature=self.config.llm_temperature,
@@ -88,13 +88,7 @@ class OpenAI(LLMSource):
             return await self.generate_response(_retry_count=_retry_count + 1)
 
     async def get_context_gpt3(self, invoker: discord.User = None) -> str:
-        context = "This is a text conversation. Each message is separated by a new line followed by '$$$'.\n"
-        context += self.config.bot_identity + "\n"
-
-        identity = self.db.get_identity(invoker.id)
-        if identity is not None:
-            name, identity = identity
-            context += identity + "\n"
+        context = self.get_initial(invoker).strip() + " Each message is separated by a new line followed by '$$$'.\n"
 
         for i in self.db.get_recent_messages(self.config.llm_context_messages_count):
             author_id, content, message_id = i
@@ -112,23 +106,12 @@ class OpenAI(LLMSource):
                 context += f"{name}: {content}"
             context += "\n$$$\n"
 
-        if len(self.config.bot_reminder):
+        if self.config.bot_reminder:
             context += f"Reminder: {self.config.bot_reminder}\n"
 
         context += f"{self.config.bot_name}: "
+        logger.debug(f"Context: {context}")
         return context
-
-    def get_initial(self, invoker: discord.User = None) -> str:
-        user_identity = ("User", None)
-        if invoker:
-            fetched_identity = self.db.get_identity(invoker.id)
-            if not fetched_identity:
-                user_identity = (invoker.display_name, f"{invoker.display_name} is a human that has not set their identity. Remind them to set it using /your_identity!")
-            else:
-                user_identity = fetched_identity
-
-        user_name, user_desc = user_identity
-        return self.config.bot_initial_prompt.replace("{bot_name}", self.config.bot_name).replace("{bot_identity}", self.config.bot_identity).replace("{user_name}", user_name).replace("{user_identity}", user_desc)
 
     def get_context_gpt4(self, invoker: discord.User = None) -> list[object]:
         initial = self.get_initial(invoker)
@@ -151,7 +134,7 @@ class OpenAI(LLMSource):
         )
         ret.insert(0, {"role": "system", "content": initial})
 
-        if len(self.config.bot_reminder):
+        if self.config.bot_reminder:
             ret.append({"role": "system", "content": f"Reminder: {self.config.bot_reminder}"})
 
         logger.debug(str(ret))

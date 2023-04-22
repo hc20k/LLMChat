@@ -18,6 +18,7 @@ from llm_sources import LLMSource
 from tts_sources import TTSSource
 from sr_sources import SRSource
 
+
 class DiscordClient(discord.Client):
     config: Config
     llm: LLMSource = None
@@ -31,8 +32,9 @@ class DiscordClient(discord.Client):
         self.config = config
 
         if not self.config.can_interact_with_channel_id(-1) and not self.config.discord_active_channels:
-            raise Exception("There aren't any active channels specified in your config.ini! Please add text/voice channel ids to Discord.active_channels (seperated by commas),"
-                            " or set Discord.active_channels to \"all\" and the bot will interact with all channels.")
+            raise Exception(
+                "There aren't any active channels specified in your config.ini! Please add text/voice channel ids to Discord.active_channels (seperated by commas),"
+                " or set Discord.active_channels to \"all\" and the bot will interact with all channels.")
 
         if self.config.can_interact_with_channel_id(-1):
             logger.warn("Discord.active_channels = \"all\", bot will interact with every channel!")
@@ -191,7 +193,8 @@ class DiscordClient(discord.Client):
             await self.setup_sr()
 
         logger.info("Config reloaded.")
-        await ctx.followup.send(content="Config reloaded.")
+        followup: discord.WebhookMessage = await ctx.followup.send(content="Config reloaded.")
+        await followup.delete(delay=3)
 
     async def retry_last_message(self, ctx: Interaction):
         history_item = self.db.last
@@ -243,7 +246,8 @@ class DiscordClient(discord.Client):
         await self.user.edit(avatar=r.content)
         await ctx.response.send_message(f"Avatar set!", delete_after=3)
 
-    async def send_message(self, text: str, channel: Union[discord.TextChannel, discord.Webhook]) -> list[discord.Message]:
+    async def send_message(self, text: str, channel: Union[discord.TextChannel, discord.Webhook]) -> list[
+        discord.Message]:
         # message splitting
         all_messages = []
         initial_message: Union[discord.Message, None] = None
@@ -253,7 +257,7 @@ class DiscordClient(discord.Client):
             all_messages.append(initial_message)
         else:
             split_msg = None
-            chunks = [text[i:i+char_limit] for i in range(0, len(text), char_limit)]
+            chunks = [text[i:i + char_limit] for i in range(0, len(text), char_limit)]
             for c in chunks:
                 split_msg = await channel.send(content=c, reference=split_msg)
                 all_messages.append(split_msg)
@@ -270,14 +274,17 @@ class DiscordClient(discord.Client):
 
         embed = discord.Embed(title="Chatbot info")
         embed.add_field(name="LLM", value=f"**{self.config.bot_llm}**: {self.llm.current_model_name}", inline=False)
-        embed.add_field(name="TTS", value=f"**{self.config.bot_tts_service}**: {self.tts.current_voice_name}", inline=False)
+        embed.add_field(name="TTS", value=f"**{self.config.bot_tts_service}**: {self.tts.current_voice_name}",
+                        inline=False)
         embed.add_field(name="SR", value=f"**{self.config.bot_speech_recognition_service}**", inline=False)
 
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
         embed.add_field(name="Name", value=self.config.bot_name, inline=False)
         embed.add_field(name="Description", value=self.config.bot_identity, inline=False)
-        embed.add_field(name="Reminder", value=self.config.bot_reminder if self.config.bot_reminder is not None else "*Not set!*", inline=False)
+        embed.add_field(name="Reminder",
+                        value=self.config.bot_reminder if self.config.bot_reminder is not None else "*Not set!*",
+                        inline=False)
 
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
@@ -300,45 +307,44 @@ class DiscordClient(discord.Client):
         self.db.clear()
 
     async def set_model(self, ctx: Interaction):
-        this = self
-
-        class ModelSelect(discord.ui.Select):
-            def __init__(self, llm: LLMSource):
-                self.llm = llm
-                super(ModelSelect, self).__init__(
-                    options=[discord.SelectOption(
-                        label=m, value=m, default=llm.current_model_name == m) for m in llm.list_models()[:25]],
-                    placeholder="Select a model...",
-                )
-
-            async def callback(self, ctx: Interaction):
+        async def llm_callback(ctx: Interaction):
+            try:
                 model = ctx.data["values"][0]
                 self.llm.set_model(model)
-                await this.change_presence(activity=discord.Game(name=model))
+                await self.change_presence(activity=discord.Game(name=model))
                 await ctx.response.edit_message(content=f"Model changed to *{self.llm.current_model_name}*", embed=None, view=None, delete_after=3)
+            except Exception as e:
+                logger.error(f"Exception thrown while LLM model: {str(e)}")
+                await ctx.response.edit_message(content=f"Exception thrown while setting LLM model:\n```{str(e)}```", embed=None, view=None, delete_after=5)
 
-        class VoiceSelect(discord.ui.Select):
-            def __init__(self, tts: TTSSource):
-                self.tts = tts
-                voices = tts.list_voices()
-                super(VoiceSelect, self).__init__(
-                    options=[discord.SelectOption(
-                        label=m, value=m, default=tts.current_voice_name == m) for m in voices[:25]],
-                    placeholder="Select a voice... "+"(Only 25 shown)" if len(voices) > 25 else "",
-                )
-
-            async def callback(self, ctx: Interaction):
+        async def voice_callback(ctx: Interaction):
+            try:
                 model = ctx.data["values"][0]
                 self.tts.set_voice(model)
                 await ctx.response.edit_message(content=f"Voice changed to *{self.tts.current_voice_name}*", embed=None, view=None, delete_after=3)
+            except Exception as e:
+                logger.error(f"Exception thrown while setting voice: {str(e)}")
+                await ctx.response.edit_message(content=f"Exception thrown while setting voice:\n```{str(e)}```", embed=None, view=None, delete_after=5)
 
-        llm_select = ModelSelect(self.llm)
-        v_select = VoiceSelect(self.tts)
-        view = discord.ui.View()
-        view.add_item(llm_select)
-        view.add_item(v_select)
+        try:
+            llm_select = discord.ui.Select(
+                placeholder="Select a model...",
+                options=[discord.SelectOption(label=m, value=m, default=self.llm.current_model_name == m) for m in self.llm.list_models()[:25]]
+            )
+            llm_select.callback = llm_callback
+            voice_select = discord.ui.Select(
+                placeholder="Select a voice... ",
+                options=[discord.SelectOption(label=m, value=m, default=self.tts.current_voice_name == m) for m in self.tts.list_voices()[:25]]
+            )
+            voice_select.callback = voice_callback
+            view = discord.ui.View()
+            view.add_item(llm_select)
+            view.add_item(voice_select)
 
-        await ctx.response.send_message("Select a model or a voice:", view=view)
+            await ctx.response.send_message("Select a model or a voice:", view=view)
+        except Exception as e:
+            logger.error(f"Exception thrown while constructing model/voice pickers: {str(e)}")
+            await ctx.response.send_message(f"Exception thrown while constructing model/voice pickers:\n```{str(e)}```", delete_after=3)
 
     async def send_system(self, ctx: Interaction, message: str):
         if self.config.bot_llm == "openai" and self.llm.use_chat_completion:
@@ -423,7 +429,6 @@ class DiscordClient(discord.Client):
                 )
 
             async def on_submit(self, interaction: Interaction):
-
                 this.config.bot_name = self.children[0].value
                 await interaction.guild.me.edit(nick=this.config.bot_name)
                 this.config.bot_identity = self.children[1].value
@@ -473,7 +478,8 @@ class DiscordClient(discord.Client):
 
         await self.say(response, vc, after=_after_speaking)
 
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
+                                    after: discord.VoiceState):
         if not before or not after:
             return
 
@@ -498,7 +504,8 @@ class DiscordClient(discord.Client):
 
         message = payload.cached_message
         if not message:
-            logger.warn("The bot was unable to look for any messages that may have been split from this one! Make sure to delete the parent message to remove it from the history!")
+            logger.warn(
+                "The bot was unable to look for any messages that may have been split from this one! Make sure to delete the parent message to remove it from the history!")
             return
 
         channel = self.get_channel(payload.channel_id)
@@ -516,20 +523,23 @@ class DiscordClient(discord.Client):
         try:
             buf = await self.tts.generate_speech(text)
             vc.stop()
+
             def _after(e):
                 if after:
                     after(e)
                 if e:
                     raise e
+
             vc.play(discord.FFmpegOpusAudio(buf, pipe=True), after=_after)
         except Exception as e:
             logger.error(f"Exception thrown while trying to generate TTS: {str(e)}")
             if text_channel_ctx:
-                await text_channel_ctx.send(content=f"Exception thrown while trying to generate TTS:\n```{str(e)}```", silent=True)
+                await text_channel_ctx.send(content=f"Exception thrown while trying to generate TTS:\n```{str(e)}```",
+                                            silent=True)
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id \
-                or not self.config.can_interact_with_channel_id(message.channel.id)\
+                or not self.config.can_interact_with_channel_id(message.channel.id) \
                 or not message.content:
             # from me or not allowed in channel
             return
@@ -555,6 +565,7 @@ class DiscordClient(discord.Client):
             except Exception as e:
                 view = discord.ui.View()
                 retry_btn = discord.ui.Button(label="Retry")
+
                 async def _retry(interaction: Interaction):
                     await interaction.message.delete(delay=2)
                     await self.on_message(message)
@@ -562,7 +573,8 @@ class DiscordClient(discord.Client):
                 retry_btn.callback = _retry
                 view.add_item(retry_btn)
 
-                await message.channel.send(f"Exception thrown while trying to generate message:\n```{str(e)}```", view=view)
+                await message.channel.send(f"Exception thrown while trying to generate message:\n```{str(e)}```",
+                                           view=view)
 
                 # since it failed remove the message
                 self.db.remove(message.id)
