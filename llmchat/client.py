@@ -263,18 +263,27 @@ class DiscordClient(discord.Client):
         return all_messages
 
     async def print_info(self, ctx: Interaction):
-        name, identity = self.db.get_identity(ctx.user.id)
+        name, identity = (None, None)
+        _identity = self.db.get_identity(ctx.user.id)
+        if _identity:
+            name, identity = _identity
 
-        embed = discord.Embed(title="LLMChat info")
-        embed.add_field(name="LLM source", value=self.config.bot_llm)
-        embed.add_field(name="Model", value=self.llm.current_model_name)
-        embed.add_field(name="Name", value=self.config.bot_name)
-        embed.add_field(name="Description", value=self.config.bot_identity)
-        embed.add_field(name="\u200B", value="\u200B",
-                        inline=False)  # seperator
+        embed = discord.Embed(title="Chatbot info")
+        embed.add_field(name="LLM", value=f"**{self.config.bot_llm}**: {self.llm.current_model_name}", inline=False)
+        embed.add_field(name="TTS", value=f"**{self.config.bot_tts_service}**: {self.tts.current_voice_name}", inline=False)
+        embed.add_field(name="SR", value=f"**{self.config.bot_speech_recognition_service}**", inline=False)
+
+        embed.add_field(name="\u200B", value="", inline=False)  # seperator
+
+        embed.add_field(name="Name", value=self.config.bot_name, inline=False)
+        embed.add_field(name="Description", value=self.config.bot_identity, inline=False)
+        embed.add_field(name="Reminder", value=self.config.bot_reminder if self.config.bot_reminder is not None else "*Not set!*", inline=False)
+
+        embed.add_field(name="\u200B", value="", inline=False)  # seperator
+
         embed.add_field(
             name="Your info (set this information with /your_identity)",
-            value="\u200B",
+            value="",
             inline=False,
         )
         embed.add_field(
