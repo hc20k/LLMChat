@@ -43,6 +43,7 @@ class PlayHt(TTSSource):
                     logger.debug(f"Play.ht progress: [{data['stage']}] {round(data['progress'] * 100)}%")
                     if "url" in data:
                         return data['url']
+            return None
 
         audio_url = await self.client.loop.run_in_executor(None, generate_audio)
         

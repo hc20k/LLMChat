@@ -516,7 +516,12 @@ class DiscordClient(discord.Client):
         try:
             buf = await self.tts.generate_speech(text)
             vc.stop()
-            vc.play(discord.FFmpegOpusAudio(buf, pipe=True), after=after)
+            def _after(e):
+                if after:
+                    after(e)
+                if e:
+                    raise e
+            vc.play(discord.FFmpegOpusAudio(buf, pipe=True), after=_after)
         except Exception as e:
             logger.error(f"Exception thrown while trying to generate TTS: {str(e)}")
             if text_channel_ctx:
