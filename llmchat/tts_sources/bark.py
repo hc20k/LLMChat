@@ -14,13 +14,16 @@ import os
 bark.generation.CACHE_DIR = "models/bark/"
 bark.generation.REMOTE_MODEL_PATHS = {
     "text": {
-        "path": os.environ.get("SUNO_TEXT_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "text.pt"))
+        "path": os.environ.get("SUNO_TEXT_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "text.pt")),
+        "checksum": "b3e42bcbab23b688355cd44128c4cdd3"
     },
     "coarse": {
-        "path": os.environ.get("SUNO_COARSE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "coarse.pt"))
+        "path": os.environ.get("SUNO_COARSE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "coarse.pt")),
+        "checksum": "5fe964825e3b0321f9d5f3857b89194d"
     },
     "fine": {
-        "path": os.environ.get("SUNO_FINE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "fine.pt"))
+        "path": os.environ.get("SUNO_FINE_MODEL_PATH", os.path.join(bark.generation.REMOTE_BASE_URL, "fine.pt")),
+        "checksum": "5428d1befe05be2ba32195496e58dc90"
     }
 }
 
