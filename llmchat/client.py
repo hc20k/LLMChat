@@ -524,7 +524,7 @@ class DiscordClient(discord.Client):
             buf: io.BytesIO = await self.tts.generate_speech(text)
             vc.stop()
             # for now i have to write this to a file so ffmpeg won't strip the last part.
-            with open("tmp.wav", "wb") as f:
+            with open("temp.wav", "wb") as f:
                 f.write(buf.getbuffer())
 
             def _after(e):

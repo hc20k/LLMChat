@@ -1,5 +1,5 @@
 from . import TTSSource
-from elevenlabs import generate, get_all_voices
+from elevenlabs import generate, voices
 import io
 import asyncio
 
@@ -15,7 +15,7 @@ class ElevenLabs(TTSSource):
         return self.config.elevenlabs_voice
 
     def list_voices(self) -> list[str]:
-        return [v.name for v in get_all_voices(self.config.elevenlabs_key)]
+        return [v.name for v in voices(self.config.elevenlabs_key)]
 
     def set_voice(self, voice_id: str) -> None:
         self.config.elevenlabs_voice = voice_id
