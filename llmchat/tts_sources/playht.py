@@ -28,6 +28,7 @@ class PlayHt(TTSSource):
             "Accept": "text/event-stream",
             "Content-Type": "application/json"
         }, stream=True)
+        r.raise_for_status()
 
         def generate_audio() -> str:
             for data in r.iter_lines():
@@ -46,8 +47,9 @@ class PlayHt(TTSSource):
             return None
 
         audio_url = await self.client.loop.run_in_executor(None, generate_audio)
+        if not audio_url:
+            raise Exception("audio_url was None!")
         
-        assert audio_url
         logger.debug(f"Downloading {audio_url}")
         data = await self.client.loop.run_in_executor(None, lambda: requests.get(audio_url))
         return io.BytesIO(data.content)
@@ -58,12 +60,16 @@ class PlayHt(TTSSource):
                 "Accept": "application/json"
             })
         cloned_voices = r.json()
+        if 'error_message' in cloned_voices:
+            cloned_voices = []
+
         r = requests.get(f"{PLAYHT_API}/voices",
             headers=self.auth_headers | {
                 "Accept": "application/json"
             })
         premade_voices = r.json()
         return cloned_voices + premade_voices
+    
     def list_voices(self) -> list[str]:
         return [v["id"] for v in self._get_all_voices()]
 

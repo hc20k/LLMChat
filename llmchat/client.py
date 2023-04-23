@@ -521,8 +521,11 @@ class DiscordClient(discord.Client):
 
     async def say(self, text: str, vc: discord.VoiceClient, text_channel_ctx: discord.TextChannel = None, after=None):
         try:
-            buf = await self.tts.generate_speech(text)
+            buf: io.BytesIO = await self.tts.generate_speech(text)
             vc.stop()
+            # for now i have to write this to a file so ffmpeg won't strip the last part.
+            with open("tmp.wav", "wb") as f:
+                f.write(buf.getbuffer())
 
             def _after(e):
                 if after:
@@ -530,7 +533,7 @@ class DiscordClient(discord.Client):
                 if e:
                     raise e
 
-            vc.play(discord.FFmpegOpusAudio(buf, pipe=True), after=_after)
+            vc.play(discord.FFmpegOpusAudio("temp.wav"), after=_after)
         except Exception as e:
             logger.error(f"Exception thrown while trying to generate TTS: {str(e)}")
             if text_channel_ctx:
