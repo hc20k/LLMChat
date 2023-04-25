@@ -61,7 +61,7 @@ class OpenAI(LLMSource):
         if not self.encoding or self.encoding.name != encoder_name:
             logger.debug(f"Updating tokenizer encoding for {self.config.openai_model}")
             try:
-                self.encoding = tiktoken.encoding_for_modelencoder_name)
+                self.encoding = tiktoken.encoding_for_model(encoder_name)
             except KeyError as e:
                 logger.debug(f"Failed to get encoder for OpenAI model: {self.config.openai_model} {str(e)}")
                 return -1
