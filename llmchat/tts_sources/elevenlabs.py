@@ -1,3 +1,5 @@
+import os
+
 from . import TTSSource
 from elevenlabs import generate, voices
 import io
@@ -6,7 +8,8 @@ import asyncio
 
 class ElevenLabs(TTSSource):
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
-        data = await self.client.loop.run_in_executor(None, lambda: generate(content, self.config.elevenlabs_key, voice=self.config.elevenlabs_voice))
+        os.environ["ELEVEN_API_KEY"] = self.config.elevenlabs_key  # elevenlabs bug doesn't use api_key from args
+        data = await self.client.loop.run_in_executor(None, lambda: generate(content, api_key=self.config.elevenlabs_key, voice=self.config.elevenlabs_voice))
         buf = io.BytesIO(data)
         return buf
 

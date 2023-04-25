@@ -3,27 +3,29 @@ from discord import User, Client
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
 from speech_recognition import AudioData
-import whisper
+from transformers import WhisperForConditionalGeneration, WhisperProcessor, WhisperTokenizerFast
+import torch
 from llmchat.logger import logger
 import numpy as np
-from torch.cuda import empty_cache
 
 class Whisper(SRSource):
     def __init__(self, client: Client, config: Config, db: PersistentData):
         super(Whisper, self).__init__(client, config, db)
-        self.model = whisper.load_model("base", download_root="models/whisper/")
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Loading whisper model on {self.device}")
+        self.model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-base.en", cache_dir="models/whisper").to(self.device)
+        self.tokenizer = WhisperTokenizerFast.from_pretrained("openai/whisper-base.en", cache_dir="models/whisper")
+        self.processor = WhisperProcessor.from_pretrained("openai/whisper-base.en", cache_dir="models/whisper", tokenizer=self.tokenizer)
 
     def recognize_speech(self, data: AudioData):
-        audio = np.frombuffer(data.get_raw_data(convert_rate=whisper.audio.SAMPLE_RATE),
-                              np.int16).flatten().astype(np.float32) / 32768.0
-        audio = whisper.pad_or_trim(audio)
-        result = whisper.transcribe(self.model, audio=audio, language="en")
-        result = result["text"].lstrip()
-        if len(result) == 0:
-            return None
-        logger.debug("Said " + result)
-        return result
+        resampled = data.get_raw_data(convert_rate=16_000)
+        resampled = np.frombuffer(resampled, dtype=np.int16).flatten().astype(np.float32) / 32768.0
+        inputs = self.processor(resampled, return_tensors="pt", sampling_rate=16_000).input_features.to(self.device)
+        predicted_ids = self.model.generate(inputs, max_length=480_000)
+        decoded = self.processor.batch_decode(predicted_ids, skip_special_tokens=True, normalize=True)[0]
+        return decoded
 
     def __del__(self):
         del self.model
-        empty_cache()
+        del self.processor
+        torch.cuda.empty_cache()

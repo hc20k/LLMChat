@@ -55,8 +55,6 @@ class OpenAI(LLMSource):
 
     def update_encoding(self):
         encoder_name = self.config.openai_model
-        if "gpt-4" in self.config.openai_model:  # FIXME: the tiktoken version required by openai-whisper (0.3.1) doesn't seem to support gpt-4. Since we're only using the count right now I guess it's okay, but I'll need to move Whisper to transformers so I can upgrade tiktoken
-            encoder_name = "gpt-3.5-turbo"
 
         if not self.encoding or self.encoding.name != encoder_name:
             logger.debug(f"Updating tokenizer encoding for {self.config.openai_model}")

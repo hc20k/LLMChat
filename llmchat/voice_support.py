@@ -79,6 +79,9 @@ class BufferAudioSink(discord.AudioSink):
         except Exception as e:
             logger.warn("Exception thrown while processing audio. " + str(e))
 
+    def cleanup(self):
+        self.on_leave()
+
     def on_leave(self):
         logger.debug("Cleaning up")
         self.stop_listen()

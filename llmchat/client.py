@@ -539,7 +539,7 @@ class DiscordClient(discord.Client):
                     raise e
 
             vc.play(discord.FFmpegOpusAudio("temp.wav"), after=_after)
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Exception thrown while trying to generate TTS: {str(e)}")
             if text_channel_ctx:
                 await text_channel_ctx.send(content=f"Exception thrown while trying to generate TTS:\n```{str(e)}```",
