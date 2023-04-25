@@ -7,4 +7,4 @@ typing~=3.7.4.3
 discord.py @ git+https://github.com/Sheepposu/discord.py@voice-receive
 SpeechRecognition
 Pillow
-tiktoken~=0.3.3
+tiktoken==0.3.1
