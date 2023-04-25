@@ -22,7 +22,7 @@ def process_reqs(reqs, args):
 
             print(f"Installing {req}")
             try:
-                subprocess.run(f"pip install {e.req.url if e.req.url else req}", check=True)
+                subprocess.run(["pip", "install", e.req.url if e.req.url else str(req)], check=True)
             except subprocess.CalledProcessError:
                 should_continue = yes(input(f"Failed to install {req}! Continue without it? [Y/n] "))
                 if not should_continue:
@@ -37,7 +37,7 @@ def process_reqs(reqs, args):
 
             print(f"Installing {r}")
             try:
-                subprocess.run(f"pip install {r}", check=True)
+                subprocess.run(["pip", "install", str(r)], check=True)
             except subprocess.CalledProcessError:
                 should_continue = yes(input(f"Failed to install {req}! Continue without it? [Y/n] "))
                 if not should_continue:
@@ -50,7 +50,7 @@ def main(args):
     # Check if repo needs update
     if os.path.exists(".git"):
         if (yes(input("Check for repo updates? [Y/n] "))):
-            subprocess.run(["git", "pull"])
+            subprocess.run(["git", "pull"], check=True)
     else:
         print("Warning: unable to check for repo updates (.git folder not found)")
 
