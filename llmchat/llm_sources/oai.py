@@ -190,6 +190,9 @@ class OpenAI(LLMSource):
         max_token_count = GPT_4_MAX_TOKENS if "32k" not in self.config.openai_model else GPT_4_32K_MAX_TOKENS
         cur_token_count = min_token_count
 
+        if cur_token_count > max_token_count:
+            raise Exception(f"Please shorten your reminder / initial prompt. Max token count exceeded: {cur_token_count} > {max_token_count}")
+
         def format_message(message):
             author_id, content, mid = message
             role = "user"
