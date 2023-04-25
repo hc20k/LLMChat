@@ -66,7 +66,7 @@ class LLaMA(LLMSource):
             context += "\n$$$\n"
 
         if self.config.bot_reminder:
-            context += f"Reminder: {self.config.bot_reminder}\n"
+            context += f"Reminder: {self._insert_wildcards(self.config.bot_reminder, self.db.get_identity(invoker.id))}\n"
 
         context += f"{self.config.bot_name}: "
         return context

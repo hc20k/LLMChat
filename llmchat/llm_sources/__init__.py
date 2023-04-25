@@ -1,6 +1,7 @@
 from discord import User, Client
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
+from datetime import datetime
 
 class LLMSource:
     def __init__(self, client: Client, config: Config, db: PersistentData):
@@ -26,8 +27,24 @@ class LLMSource:
             else:
                 user_identity = fetched_identity
 
-        user_name, user_desc = user_identity
-        return self.config.bot_initial_prompt.replace("{bot_name}", self.config.bot_name).replace("{bot_identity}", self.config.bot_identity).replace("{user_name}", user_name).replace("{user_identity}", user_desc)
+        return self._insert_wildcards(self.config.bot_initial_prompt, user_identity)
+
+    def _insert_wildcards(self, text: str, user_info: tuple = None) -> str:
+        user_name, user_identity = user_info or (None, None)
+        wildcards = {
+            "bot_name": self.config.bot_name,
+            "bot_identity": self.config.bot_identity,
+            "user_name": user_name,
+            "user_identity": user_identity,
+            "date": datetime.now().strftime("%A, %B %d, %Y %H:%M"),
+            "nl": "\n",
+        }
+
+        for wc, value in wildcards.items():
+            if value:
+                text = text.replace("{" + wc + "}", value)
+
+        return text
 
     @property
     def is_openai(self) -> bool:

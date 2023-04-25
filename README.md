@@ -6,26 +6,41 @@
 
 ## Features:
 
-- Realistic voice chat support with ElevenLabs and Azure TTS (both require API keys) (Note: the voice chat is only stable if one person is speaking at a time)
+- Realistic voice chat support with ElevenLabs, Azure TTS, Play.ht, Silero, or Bark models (NOTE: the voice chat is only stable if one person is speaking at a time)
 - Custom bot identity and name
 - Support for all OpenAI text completion and chat completion models
 - Support for local LLaMA models
-- Local whisper support for speech recognition (as well as Google speech recognition)
+- Local OpenAI Whisper support for speech recognition (as well as Google speech recognition)
 - Chat-optimized commands
 - Image recognition support with BLIP
 
 ![Screenshot of messages](assets/repo/message_ss.png)
 
-## How to use:
+> NOTE: Please only use this on small private servers. Right now it is set up for testing only, meaning anyone on the server can invoke its commands. Also, the bot will join voice chat whenever someone else joins!
 
-### NOTE: Please only use this on small private servers. Right now it is set up for testing only, meaning anyone on the server can invoke its commands. Also, the bot will join voice chat whenever someone else joins!
+## Installing the dependencies:
 
-Install the dependencies:
+### Using update.py
+
+Simply run 
+```bash
+python update.py -y
+# -y installs required dependencies without user interaction
+```
+to install all required dependencies. You will be asked if you want to install the optional dependencies in the script.
+
+> NOTE: It's healthy to run `update.py` after a new commit is made, because requirements may be added.
+
+### Manual method
+
+If you were having trouble with the `update.py` script, you can install the dependencies manually using these commands.
+
 ```bash
 pip install -r requirements.txt
 
 # for voice support (ElevenLabs, bark, Azure, whisper)
 pip install -r optional/voice-requirements.txt
+# also, install ffmpeg
 
 # for BLIP support
 pip install -r optional/blip-requirements.txt
@@ -33,8 +48,6 @@ pip install -r optional/blip-requirements.txt
 # for LLaMA support
 pip install -r optional/llama-requirements.txt
 ```
-
-### Install `ffmpeg` if you want to use voice chat.
 
 If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to install PyTorch as well. [Directions here.](https://pytorch.org/get-started/locally/)
 
@@ -51,12 +64,22 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
 `Bot.tts_service`:
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)
  - `azure` - use Azure cognitive services for TTS. ($) (Further configuration in the `Azure` section required)
- - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via PyTorch. (Free) (**STILL BEING IMPLEMENTED**)
- - `play.ht` - uses [Play.ht](https://play.ht/) for text generation. API key needed. ($)
+ - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via PyTorch. (Free)
+ - `play.ht` - uses [Play.ht](https://play.ht/) for TTS. API key needed. ($)
+ - `bark` - uses local [Bark](https://github.com/suno-ai/bark) models for TTS. Optimal graphics card needed. (Free)
 
 `Bot.llm`:
 - `openai` - use the OpenAI API for inference. ($) (Further configuration in the `OpenAI` section required)
 - `llama` - use a local LLaMA model for inference. (Free) **If you're using this bot for voice chat, LLaMA is not recommended. It is very slow.** (Further configuration in the `LLaMA` section required)
+
+`Bot.initial_prompt` and `Bot.reminder` wildcards:
+> These are wildcards you can insert into the `Bot.initial_prompt` and `Bot.reminder` options in your config. They will be replaced with their respective values when sent to the LLM.
+- `{bot_name}` - replaced with the bot's name. (set in `Bot.name` or with `/configure`)
+- `{bot_identity}` - replaced with the bot's identity. (set in `Bot.identity` or with `/configure`)
+- `{user_name}` - replaced with your name. (set with `/your_identity`)
+- `{user_identity}` - replaced with your identity. (set with `/your_identity`)
+- `{date}` - replaced with today's date. (in `"%A, %B %d, %Y %H:%M"` format)
+- `{nl}` - replaced with `\n`
 
 After changing these values, you can run the bot:
 ```bash

@@ -198,6 +198,7 @@ class DiscordClient(discord.Client):
 
     async def retry_last_message(self, ctx: Interaction):
         history_item = self.db.last
+
         await ctx.response.defer()
 
         if not history_item:
@@ -283,9 +284,9 @@ class DiscordClient(discord.Client):
         embed.add_field(name="Name", value=self.config.bot_name, inline=False)
         embed.add_field(name="Description", value=self.config.bot_identity, inline=False)
         embed.add_field(name="Reminder",
-                        value=self.config.bot_reminder if self.config.bot_reminder is not None else "*Not set!*",
+                        value=self.llm._insert_wildcards(self.config.bot_reminder, (name, identity)) if self.config.bot_reminder else "*Not set!*",
                         inline=False)
-
+        embed.add_field(name="Initial prompt", value=self.llm._insert_wildcards(self.config.bot_initial_prompt, (name, identity)) if self.config.bot_initial_prompt else "*Not set!*", inline=False)
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
         embed.add_field(
@@ -307,6 +308,8 @@ class DiscordClient(discord.Client):
         self.db.clear()
 
     async def set_model(self, ctx: Interaction):
+
+        await ctx.response.defer()
         async def llm_callback(ctx: Interaction):
             try:
                 model = ctx.data["values"][0]
@@ -341,10 +344,12 @@ class DiscordClient(discord.Client):
             view.add_item(llm_select)
             view.add_item(voice_select)
 
-            await ctx.response.send_message("Select a model or a voice:", view=view)
+            await ctx.followup.send(content="Select a model or a voice:", view=view)
         except Exception as e:
             logger.error(f"Exception thrown while constructing model/voice pickers: {str(e)}")
-            await ctx.response.send_message(f"Exception thrown while constructing model/voice pickers:\n```{str(e)}```", delete_after=3)
+            exc_message = await ctx.followup.send(content=f"Exception thrown while constructing model/voice pickers:\n```{str(e)}```")
+            await exc_message.delete(delay=5)
+
 
     async def send_system(self, ctx: Interaction, message: str):
         if self.config.bot_llm == "openai" and self.llm.use_chat_completion:

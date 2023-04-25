@@ -211,7 +211,7 @@ class Config:
 
     @property
     def bot_reminder(self):
-        return self._config.get("Bot", "reminder")
+        return self._config.get("Bot", "reminder", fallback="")
 
     @bot_reminder.setter
     def bot_reminder(self, reminder):
