@@ -3,6 +3,7 @@ import pkg_resources
 import argparse
 import os
 
+
 def yes(response) -> bool:
     return response.lower() == 'y' or not len(response)
 
@@ -15,6 +16,21 @@ def process_reqs(reqs, args):
             req = e.req.name
             if not args.y:
                 should_install = yes(input(f"Dependency unmet: {req}. Install? [Y/n] "))
+                if not should_install:
+                    print(f"Skipping {req}...")
+                    continue
+
+            print(f"Installing {req}")
+            try:
+                subprocess.run(f"pip install {e.req.url if e.req.url else req}", check=True)
+            except subprocess.CalledProcessError:
+                should_continue = yes(input(f"Failed to install {req}! Continue without it? [Y/n] "))
+                if not should_continue:
+                    exit(1)
+        except pkg_resources.VersionConflict as e:
+            req = e.req.name
+            if not args.y:
+                should_install = yes(input(f"Version conflict with {req}! Install required version? [Y/n] "))
                 if not should_install:
                     print(f"Skipping {req}...")
                     continue
