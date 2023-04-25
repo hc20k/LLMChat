@@ -35,9 +35,9 @@ def process_reqs(reqs, args):
                     print(f"Skipping {req}...")
                     continue
 
-            print(f"Installing {req}")
+            print(f"Installing {r}")
             try:
-                subprocess.run(f"pip install {e.req.url if e.req.url else req}", check=True)
+                subprocess.run(f"pip install {r}", check=True)
             except subprocess.CalledProcessError:
                 should_continue = yes(input(f"Failed to install {req}! Continue without it? [Y/n] "))
                 if not should_continue:
