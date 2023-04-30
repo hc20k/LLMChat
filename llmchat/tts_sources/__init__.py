@@ -1,4 +1,4 @@
-from discord import User, Client
+from discord import User, Client, SelectOption
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
 import io
@@ -13,7 +13,7 @@ class TTSSource:
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
         return NotImplementedError()
 
-    def list_voices(self) -> list[str]:
+    def list_voices(self) -> list[SelectOption]:
         return NotImplementedError()
 
     def set_voice(self, voice_id: str) -> None:

@@ -32,7 +32,7 @@ class DummyAudioSource(sr.AudioSource):
     def __enter__(self):
         # FIX: For some reason this only works when the sample rate is divided by 2... Otherwise the audio's super slow.
         self.stream = self.audio.open(channels=2, rate=round(discord.opus.Decoder.SAMPLING_RATE/2),
-                                      frames_per_buffer=discord.opus.Decoder.FRAME_SIZE, format=pyaudio.paInt16, input=True)
+                                      frames_per_buffer=discord.opus.Decoder.FRAME_SIZE, format=pyaudio.paInt16, input=False, output=False)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):

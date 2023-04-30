@@ -1,3 +1,5 @@
+import discord
+
 from . import TTSSource
 from discord import User, Client
 from llmchat.config import Config
@@ -12,6 +14,7 @@ PLAYHT_API = "https://play.ht/api/v2"
 class PlayHt(TTSSource):
     def __init__(self, client: Client, config: Config, db: PersistentData):
         super(PlayHt, self).__init__(client, config, db)
+        self._voice_list_cache = []
 
     @property
     def auth_headers(self):
@@ -70,12 +73,20 @@ class PlayHt(TTSSource):
         premade_voices = r.json()
         return cloned_voices + premade_voices
     
-    def list_voices(self) -> list[str]:
-        return [v["id"] for v in self._get_all_voices()]
+    def list_voices(self) -> list[discord.SelectOption]:
+        self._voice_list_cache = self._get_all_voices()
+        return [discord.SelectOption(value=v["id"], label=v["name"], default=self.config.playht_voice_id == v["id"],
+                                     emoji=discord.PartialEmoji(name="♂️" if v["gender"] == "male" else "♀️") if "gender" in v else None,
+                                     ) for i,v in enumerate(self._voice_list_cache)]
 
-    def set_voice(self, voice_name: str) -> None:
-        self.config.playht_voice_id = voice_name
+    def set_voice(self, voice_id: str) -> None:
+        self.config.playht_voice_id = voice_id
 
     @property
     def current_voice_name(self) -> str:
-        return self.config.playht_voice_id
+        if self._voice_list_cache:
+            for v in self._voice_list_cache:
+                if v["id"] == self.config.playht_voice_id:
+                    return v["name"]
+            return self.config.playht_voice_id
+        return self.config.playht_voice_id + " (voice id)"

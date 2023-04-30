@@ -7,6 +7,7 @@ from PIL import Image
 from typing import Union
 from discord import app_commands
 from discord.interactions import Interaction
+import ui_extensions
 
 from blip import BLIP
 from config import Config
@@ -174,27 +175,32 @@ class DiscordClient(discord.Client):
     async def reload_config(self, ctx: Interaction):
         await ctx.response.defer()
 
-        prev_llm, prev_blip, prev_tts, prev_speech = self.config.bot_llm, self.config.bot_blip_enabled, self.config.bot_tts_service, self.config.bot_speech_recognition_service
-        self.config.load()
-        # manually load new settings if necessary
-        if prev_llm != self.config.bot_llm:
-            await self.setup_llm()
-        if prev_blip != self.config.bot_blip_enabled:
-            if not self.config.bot_blip_enabled:
-                del self.blip
-                self.blip = None
-            else:
-                self.blip = BLIP()
-        if prev_tts != self.config.bot_tts_service:
-            await self.setup_tts()
-        if prev_speech != self.config.bot_speech_recognition_service:
-            del self.sr
-            self.sr = None
-            await self.setup_sr()
+        try:
+            prev_llm, prev_blip, prev_tts, prev_speech = self.config.bot_llm, self.config.bot_blip_enabled, self.config.bot_tts_service, self.config.bot_speech_recognition_service
+            self.config.load()
+            # manually load new settings if necessary
+            if prev_llm != self.config.bot_llm:
+                await self.setup_llm()
+            if prev_blip != self.config.bot_blip_enabled:
+                if not self.config.bot_blip_enabled:
+                    del self.blip
+                    self.blip = None
+                else:
+                    self.blip = BLIP()
+            if prev_tts != self.config.bot_tts_service:
+                await self.setup_tts()
+            if prev_speech != self.config.bot_speech_recognition_service:
+                del self.sr
+                self.sr = None
+                await self.setup_sr()
 
-        logger.info("Config reloaded.")
-        followup: discord.WebhookMessage = await ctx.followup.send(content="Config reloaded.")
-        await followup.delete(delay=3)
+            logger.info("Config reloaded.")
+            followup: discord.WebhookMessage = await ctx.followup.send(content="Config reloaded.")
+            await followup.delete(delay=3)
+        except BaseException as e:
+            logger.error(f"Error reloading config: {str(e)}")
+            followup: discord.WebhookMessage = await ctx.followup.send(content=f"Error reloading config: ```{str(e)}```")
+            await followup.delete(delay=5)
 
     async def retry_last_message(self, ctx: Interaction):
         history_item = self.db.last
@@ -268,39 +274,48 @@ class DiscordClient(discord.Client):
         return all_messages
 
     async def print_info(self, ctx: Interaction):
+        await ctx.response.defer()
+
         name, identity = (None, None)
         _identity = self.db.get_identity(ctx.user.id)
         if _identity:
             name, identity = _identity
 
         embed = discord.Embed(title="Chatbot info")
-        embed.add_field(name="LLM", value=f"**{self.config.bot_llm}**: {self.llm.current_model_name}", inline=False)
-        embed.add_field(name="TTS", value=f"**{self.config.bot_tts_service}**: {self.tts.current_voice_name}",
+        llm_str = f"**{self.config.bot_llm}**: {self.llm.current_model_name}\n"
+        llm_str += f"⚙️ Temperature: {self.config.llm_temperature}\n"
+        llm_str += f"⚙️ Presence penalty: {self.config.llm_presence_penalty}\n"
+        llm_str += f"⚙️ Frequency penalty: {self.config.llm_frequency_penalty}\n"
+        llm_str += f"⚙️ Context history count: {self.config.llm_context_messages_count}\n"
+        llm_str += f"⚙️ Max tokens: {'Unlimited' if self.config.llm_max_tokens == 0 else self.config.llm_max_tokens}\n"
+
+        embed.add_field(name="📝 LLM", value=llm_str, inline=False)
+        embed.add_field(name="🗣️ TTS", value=f"**{self.config.bot_tts_service}**: {self.tts.current_voice_name}",
                         inline=False)
-        embed.add_field(name="SR", value=f"**{self.config.bot_speech_recognition_service}**", inline=False)
+        embed.add_field(name="🗨️ SR", value=f"**{self.config.bot_speech_recognition_service}**", inline=False)
 
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
-        embed.add_field(name="Name", value=self.config.bot_name, inline=False)
-        embed.add_field(name="Description", value=self.config.bot_identity, inline=False)
-        embed.add_field(name="Reminder",
+        embed.add_field(name="📛 Name", value=self.config.bot_name, inline=False)
+        embed.add_field(name="✒️ Description", value=self.config.bot_identity, inline=False)
+        embed.add_field(name="🎗️ Reminder",
                         value=self.llm._insert_wildcards(self.config.bot_reminder, (name, identity)) if self.config.bot_reminder else "*Not set!*",
                         inline=False)
-        embed.add_field(name="Initial prompt", value=self.llm._insert_wildcards(self.config.bot_initial_prompt, (name, identity)) if self.config.bot_initial_prompt else "*Not set!*", inline=False)
+        embed.add_field(name="✍️ Initial prompt", value=self.llm._insert_wildcards(self.config.bot_initial_prompt, (name, identity)) if self.config.bot_initial_prompt else "*Not set!*", inline=False)
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
         embed.add_field(
-            name="Your info (set this information with /your_identity)",
+            name="🫵 Your info (set this information with /your_identity)",
             value="",
             inline=False,
         )
         embed.add_field(
-            name="Name", value=name if name is not None else "*Not set!*")
+            name="📛 Name", value=name if name is not None else "*Not set!*")
         embed.add_field(
-            name="Description", value=identity if identity is not None else "*Not set!*"
+            name="✒️ Description", value=identity if identity is not None else "*Not set!*"
         )
 
-        await ctx.response.send_message(embed=embed)
+        await ctx.followup.send(embed=embed)
 
     async def purge_channel(self, ctx: Interaction):
         await ctx.response.send_message(f"Channel purged!", delete_after=3)
@@ -330,21 +345,13 @@ class DiscordClient(discord.Client):
                 await ctx.response.edit_message(content=f"Exception thrown while setting voice:\n```{str(e)}```", embed=None, view=None, delete_after=5)
 
         try:
-            llm_select = discord.ui.Select(
-                placeholder="Select a model...",
-                options=[discord.SelectOption(label=m, value=m, default=self.llm.current_model_name == m) for m in self.llm.list_models()[:25]]
-            )
-            llm_select.callback = llm_callback
-            voice_select = discord.ui.Select(
-                placeholder="Select a voice... ",
-                options=[discord.SelectOption(label=m, value=m, default=self.tts.current_voice_name == m) for m in self.tts.list_voices()[:25]]
-            )
-            voice_select.callback = voice_callback
-            view = discord.ui.View()
-            view.add_item(llm_select)
-            view.add_item(voice_select)
+            def on_exception(e):
+                raise e
 
-            await ctx.followup.send(content="Select a model or a voice:", view=view)
+            view = discord.ui.View()
+            view.add_item(ui_extensions.PaginationDropdown(options=self.llm.list_models(), callback=llm_callback, on_exception=on_exception))
+            view.add_item(ui_extensions.PaginationDropdown(options=self.tts.list_voices(), callback=voice_callback, on_exception=on_exception))
+            await ctx.followup.send(content="Select an LLM model or a TTS voice:", view=view)
         except Exception as e:
             logger.error(f"Exception thrown while constructing model/voice pickers: {str(e)}")
             exc_message = await ctx.followup.send(content=f"Exception thrown while constructing model/voice pickers:\n```{str(e)}```")
@@ -432,12 +439,23 @@ class DiscordClient(discord.Client):
                         required=False,
                     )
                 )
+                self.add_item(
+                    discord.ui.TextInput(
+                        label="Initial prompt",
+                        custom_id="initial",
+                        placeholder="The bot's initial prompt. (Example: You are a helpful assistant named {bot_name}.)",
+                        style=discord.TextStyle.paragraph,
+                        default=this.config.bot_initial_prompt,
+                        required=False,
+                    )
+                )
 
             async def on_submit(self, interaction: Interaction):
                 this.config.bot_name = self.children[0].value
                 await interaction.guild.me.edit(nick=this.config.bot_name)
                 this.config.bot_identity = self.children[1].value
                 this.config.bot_reminder = self.children[2].value
+                this.config.bot_initial_prompt = self.children[3].value
 
                 await interaction.response.send_message("Changes committed.", delete_after=3)
 

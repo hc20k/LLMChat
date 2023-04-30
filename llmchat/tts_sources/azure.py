@@ -1,8 +1,11 @@
 import asyncio
 
+import azure.cognitiveservices.speech
+import discord
+
 from . import TTSSource
 import azure.cognitiveservices.speech as speechsdk
-from discord import User, Client
+from discord import User, Client, SelectOption
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
 from llmchat.logger import logger
@@ -34,6 +37,7 @@ class Azure(TTSSource):
     def set_voice(self, voice_id: str):
         self.config.azure_voice = voice_id
 
-    def list_voices(self) -> list[str]:
+    def list_voices(self) -> list[SelectOption]:
         res: speechsdk.speech.SynthesisVoicesResult = self.synthesizer.get_voices_async("en-US").get()
-        return [v.short_name for v in res.voices]
+        return [SelectOption(label=v.local_name, value=v.short_name, default=self.config.azure_voice == v.short_name,
+                             emoji=discord.PartialEmoji(name="♂️" if v.gender == azure.cognitiveservices.speech.SynthesisVoiceGender.Male else "♀️")) for v in res.voices]

@@ -1,4 +1,5 @@
 import bark.generation
+import discord
 
 from . import TTSSource
 import io
@@ -39,7 +40,7 @@ class Bark(TTSSource):
         write_wav(buf, SAMPLE_RATE, data)
         return buf
 
-    def list_voices(self) -> list[str]:
+    def list_voices(self) -> list[discord.SelectOption]:
         return []
 
     def __del__(self):

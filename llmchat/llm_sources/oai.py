@@ -28,16 +28,15 @@ class OpenAI(LLMSource):
                 f"Chat completion model is selected! ({self.config.openai_model}) This might yield different results than using a text completion model like davinci."
             )
 
-    def list_models(self) -> list[str]:
+    def list_models(self) -> list[discord.SelectOption]:
         all_models = openai.Model.list()
         ret = [
             m.id
             for m in all_models.data
-            if (m.id.startswith("gpt") or m.id.startswith("text-"))
-            and not ("-search-" in m.id or "-similarity-" in m.id)
+            if not ("-search-" in m.id or "-similarity-" in m.id)
         ]
         ret.sort()
-        return ret
+        return [discord.SelectOption(label=m, value=m, default=self.config.openai_model == m) for m in ret]
 
     def set_model(self, model_id: str) -> None:
         logger.info(f"OpenAI model set to {model_id}")
