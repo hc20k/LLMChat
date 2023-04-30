@@ -29,7 +29,10 @@ class OpenAI(LLMSource):
             )
 
     def list_models(self) -> list[discord.SelectOption]:
+        openai.aiosession.set(ClientSession())
+        # fix api requestor error
         all_models = openai.Model.list()
+        openai.aiosession.get().close()
         ret = [
             m.id
             for m in all_models.data

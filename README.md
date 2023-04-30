@@ -10,7 +10,7 @@
 - Custom bot identity and name
 - Support for all OpenAI text completion and chat completion models
 - Support for local LLaMA models
-- Local OpenAI Whisper support for speech recognition (as well as Google speech recognition)
+- Local OpenAI Whisper support for speech recognition (as well as Google and Azure speech recognition)
 - Chat-optimized commands
 - Image recognition support with BLIP
 
@@ -60,6 +60,7 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
 `Bot.speech_recognition_service`:
  - `whisper` - run OpenAI's Whisper locally. (Free)
  - `google` - use Google's online transcription service. (Free)
+ - `azure` - use Microsoft Azure's online transcription service. ($)
 
 `Bot.tts_service`:
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)

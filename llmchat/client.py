@@ -169,6 +169,9 @@ class DiscordClient(discord.Client):
         elif self.config.bot_speech_recognition_service == "google":
             from sr_sources.google import Google
             self.sr = Google(*params)
+        elif self.config.bot_speech_recognition_service == "azure":
+            from sr_sources.azure import Azure
+            self.sr = Azure(*params)
         else:
             logger.critical(f"Unknown speech recognition service: {self.config.bot_speech_recognition_service}")
 

@@ -1,43 +1,13 @@
+import threading
 import discord
+import speech_recognition
 import speech_recognition as sr
 import pyaudio
 import numpy as np
 import asyncio
 from logger import logger
 from sr_sources import SRSource
-
-class DummyAudioSource(sr.AudioSource):
-    class DummyStream(object):
-        def __init__(self, buffer_sink):
-            self.buffer_sink = buffer_sink
-
-        def read(self, size):
-            bytes_to_read = min(size, len(self.buffer_sink.buffer))
-            ret = self.buffer_sink.buffer.tobytes()[:bytes_to_read]
-            self.buffer_sink.buffer = self.buffer_sink.buffer[bytes_to_read:]
-            return ret
-
-        def close(self):
-            pass
-
-    def __init__(self, buffer_sink):
-        self.buffer_sink: BufferAudioSink = buffer_sink
-        self.SAMPLE_RATE = discord.opus.Decoder.SAMPLING_RATE
-        self.CHUNK = self.buffer_sink.buffer_size
-        self.SAMPLE_WIDTH = 2
-
-        self.audio = pyaudio.PyAudio()
-        self.stream = None
-
-    def __enter__(self):
-        # FIX: For some reason this only works when the sample rate is divided by 2... Otherwise the audio's super slow.
-        self.stream = self.audio.open(channels=2, rate=round(discord.opus.Decoder.SAMPLING_RATE/2),
-                                      frames_per_buffer=discord.opus.Decoder.FRAME_SIZE, format=pyaudio.paInt16, input=False, output=False)
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.audio.terminate()
-
+import time
 
 class BufferAudioSink(discord.AudioSink):
     sr_source: SRSource
@@ -51,36 +21,60 @@ class BufferAudioSink(discord.AudioSink):
         self.SAMPLE_RATE_HZ = discord.opus.Decoder.SAMPLING_RATE
 
         self.buffer_pointer = 0
-        self.buffer_size = discord.opus.Decoder.FRAME_SIZE
+        self.buffer_size = discord.opus.Decoder.SAMPLING_RATE * 5
         self.buffer = np.zeros(shape=(self.buffer_size, self.NUM_CHANNELS), dtype='int16')
         self.speaker = None
         self.is_speaking = False
+        self._last_spoke = time.time()
+        self.silence_limit = 1.5  # seconds
 
-        self.stream = DummyAudioSource(self)
+        # self.stream = DummyAudioSource(self)
         self.sr = sr.Recognizer()
-        self.sr.non_speaking_duration = 0.1
-        self.sr.pause_threshold = 0.3
-        self.stop_listen = self.sr.listen_in_background(self.stream, self.listen)
+        self.slience_thread = threading.Thread(target=self.check_silence)
+        self.slience_thread.start()
+        # self.sr.non_speaking_duration = 0.1
+        # self.sr.pause_threshold = 0.3
+        # self.stop_listen = self.sr.listen_in_background(self.stream, self.listen)
 
     def listen(self, _, audio_data: sr.AudioData):
         if self.is_speaking or not self.speaker:
             return
 
-        debug = False
+        debug = True
         if debug:
             import sounddevice as sd
             sd.play(np.frombuffer(audio_data.get_raw_data(), dtype='int16'), self.SAMPLE_RATE_HZ)
 
         try:
+            logger.info("Recognizing speech...")
             result = self.sr_source.recognize_speech(audio_data)
-            if result is not None:
+            if result:
                 logger.info(f"Said: {result}")
                 self.loop.create_task(self.on_speech(self.speaker, result))
         except Exception as e:
             logger.warn("Exception thrown while processing audio. " + str(e))
+            raise e
+
+    def recognize_buffer(self):
+        self.is_speaking = True
+        speech_data = speech_recognition.AudioData(self.buffer[:self.buffer_pointer], self.SAMPLE_RATE_HZ * 2, discord.opus.Decoder.CHANNELS)
+
+        try:
+            logger.info("Recognizing speech...")
+            result = self.sr_source.recognize_speech(speech_data)
+            if result:
+                logger.info(f"Said: {result}")
+                self.loop.create_task(self.on_speech(self.speaker, result))
+        except BaseException as e:
+            self.is_speaking = False
+            logger.warn("Exception thrown while processing audio. " + str(e))
+            raise e
+
+        self.buffer_pointer = 0
+        self.buffer = np.zeros(shape=(self.buffer_size, self.NUM_CHANNELS), dtype='int16')  # clear
 
     def cleanup(self):
-        self.on_leave()
+        pass
 
     def on_leave(self):
         logger.debug("Cleaning up")
@@ -89,6 +83,17 @@ class BufferAudioSink(discord.AudioSink):
     def on_rtcp(self, packet: discord.RTCPPacket):
         pass
 
+    @property
+    def time_since_last_spoke(self):
+        return time.time() - self._last_spoke
+
+    def check_silence(self):
+        while 1:
+            if self.time_since_last_spoke > self.silence_limit and np.abs(self.buffer).max() > 0:
+                self._last_spoke = time.time()
+                self.recognize_buffer()
+            time.sleep(0.1)
+
     def on_audio(self, voice_data: discord.AudioFrame):
         if voice_data.user is None:
             return
@@ -96,13 +101,13 @@ class BufferAudioSink(discord.AudioSink):
         # adapted from https://github.com/vadimkantorov/discordspeechtotext/
         self.speaker = voice_data.user.id
         frame = np.ndarray(shape=(self.NUM_SAMPLES, self.NUM_CHANNELS), dtype='int16', buffer=voice_data.audio)
-        speaking = np.abs(frame).sum() > 0
+        speaking = np.abs(frame).max() > 10
 
         if speaking and not self.is_speaking:
+            self._last_spoke = time.time()
             if self.buffer_pointer + self.NUM_SAMPLES >= self.buffer_size:
-                # Shift the buffer to the left by NUM_SAMPLES
-                self.buffer[:self.buffer_size - self.NUM_SAMPLES] = self.buffer[self.NUM_SAMPLES:]
-                self.buffer_pointer = self.buffer_size - self.NUM_SAMPLES
+                # buffer is full, flush
+                self.recognize_buffer()
 
             # Add the new frame to the buffer
             self.buffer[self.buffer_pointer:self.buffer_pointer + self.NUM_SAMPLES] = frame
