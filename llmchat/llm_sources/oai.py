@@ -16,8 +16,8 @@ class OpenAI(LLMSource):
     encoding: tiktoken.Encoding = None
     def __init__(self, client: discord.Client, config: Config, db: PersistentData):
         super(OpenAI, self).__init__(client, config, db)
-        openai.api_key = config.openai_key
         self.update_encoding()
+        self.on_config_reloaded()
 
     async def check_model(self):
         assert (
@@ -28,10 +28,13 @@ class OpenAI(LLMSource):
                 f"Chat completion model is selected! ({self.config.openai_model}) This might yield different results than using a text completion model like davinci."
             )
 
+    def on_config_reloaded(self):
+        openai.api_key = self.config.openai_key
+
     def list_models(self) -> list[discord.SelectOption]:
         openai.aiosession.set(ClientSession())
         # fix api requestor error
-        all_models = openai.Model.list()
+        all_models = openai.Model.list(api_base=self.config.openai_reverse_proxy_url)
         openai.aiosession.get().close()
         ret = [
             m.id
@@ -63,8 +66,8 @@ class OpenAI(LLMSource):
             try:
                 self.encoding = tiktoken.encoding_for_model(encoder_name)
             except KeyError as e:
-                logger.debug(f"Failed to get encoder for OpenAI model: {self.config.openai_model} {str(e)}")
-                return -1
+                logger.debug(f"Failed to get encoder for OpenAI model: {self.config.openai_model}. Using default (cl100k_base)")
+                self.encoding = tiktoken.get_encoding("cl100k_base")
 
     def get_token_count(self, content: Union[str, list[dict], dict]) -> int:
         if isinstance(content, str):
@@ -102,6 +105,7 @@ class OpenAI(LLMSource):
                         raise Exception(f"Token limit exceeded! ({token_count} > {GPT_3_MAX_TOKENS}) Please make your initial context shorter or reduce the message context count!")
 
                 response = await openai.Completion.acreate(
+                    api_base=self.config.openai_reverse_proxy_url,
                     model=self.config.openai_model,
                     prompt=prompt,
                     stop="\n$$$",
@@ -124,6 +128,7 @@ class OpenAI(LLMSource):
                         raise Exception(f"Token limit exceeded! ({token_count} > {model_max_tokens}) Please make your initial context shorter or reduce the message context count!")
 
                 response = await openai.ChatCompletion.acreate(
+                    api_base=self.config.openai_reverse_proxy_url,
                     model=self.config.openai_model,
                     max_tokens=None
                     if completion_tokens == 0
@@ -136,6 +141,8 @@ class OpenAI(LLMSource):
                 logger.debug(f"{response.usage.total_tokens} tokens used")
                 response = response.choices[0].message.content.strip()
             await openai.aiosession.get().close()
+            if not response:
+                raise Exception("Response from OpenAI API was empty!")
             return response
         except openai.error.APIConnectionError as e:
             # https://github.com/openai/openai-python/issues/371

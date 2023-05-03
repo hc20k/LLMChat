@@ -35,6 +35,15 @@ class Config:
         self.save()
 
     @property
+    def openai_reverse_proxy_url(self) -> str:
+        return self._config.get("OpenAI", "reverse_proxy_url", fallback=None)
+
+    @openai_reverse_proxy_url.setter
+    def openai_reverse_proxy_url(self, url):
+        self._config.set("OpenAI", "reverse_proxy_url", url)
+        self.save()
+
+    @property
     def llm_context_messages_count(self) -> int:
         return self._config.getint("LLM", "context_messages_count")
 

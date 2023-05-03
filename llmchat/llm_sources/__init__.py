@@ -53,3 +53,6 @@ class LLMSource:
     @property
     def current_model_name(self) -> str:
         return "Unknown LLM"
+
+    def on_config_reloaded(self):
+        pass

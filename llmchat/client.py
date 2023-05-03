@@ -197,6 +197,8 @@ class DiscordClient(discord.Client):
                 self.sr = None
                 await self.setup_sr()
 
+            self.llm.on_config_reloaded()
+
             logger.info("Config reloaded.")
             followup: discord.WebhookMessage = await ctx.followup.send(content="Config reloaded.")
             await followup.delete(delay=3)

@@ -70,7 +70,7 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
  - `bark` - uses local [Bark](https://github.com/suno-ai/bark) models for TTS. Optimal graphics card needed. (Free)
 
 `Bot.llm`:
-- `openai` - use the OpenAI API for inference. ($) (Further configuration in the `OpenAI` section required)
+- `openai` - use the OpenAI API for inference. (In order to use a reverse proxy, specify `OpenAI.reverse_proxy_url` in your config) ($) (Further configuration in the `OpenAI` section required)
 - `llama` - use a local LLaMA model for inference. (Free) **If you're using this bot for voice chat, LLaMA is not recommended. It is very slow.** (Further configuration in the `LLaMA` section required)
 
 `Bot.initial_prompt` and `Bot.reminder` wildcards:
