@@ -7,6 +7,7 @@
 ## Features:
 
 - Realistic voice chat support with ElevenLabs, Azure TTS, Play.ht, Silero, or Bark models (NOTE: the voice chat is only stable if one person is speaking at a time)
+- Long term message recalling using OpenAI's embeddings to detect similar topics talked about in the past
 - Custom bot identity and name
 - Support for all OpenAI text completion and chat completion models
 - Support for local LLaMA models
@@ -81,6 +82,12 @@ Rename the `config.example.ini` file to `config.ini` and replace the fields that
 - `{user_identity}` - replaced with your identity. (set with `/your_identity`)
 - `{date}` - replaced with today's date. (in `"%A, %B %d, %Y %H:%M"` format)
 - `{nl}` - replaced with `\n`
+
+`OpenAI`:
+ - `use_embeddings` - set this to `true` to enable long term message recollection. This will use the OpenAI API to create embeddings for each message, then rank them by similarity and prepend the message context with the relevant messages.
+ - `similarity_threshold` - Messages with a similarity value equal to or above this number will be considered for recollection. Range (0 - 1)
+ - `max_similar_messages` - The maximum limit of similar messages to prepend to the bot. (Default: 5)
+ - `reverse_proxy_url` - The base URL for an OpenAI reverse proxy, if you need to use one.
 
 After changing these values, you can run the bot:
 ```bash

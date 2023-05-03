@@ -93,6 +93,7 @@ class OpenAI(LLMSource):
         self, invoker: discord.User = None, _retry_count=0
     ) -> str:
         openai.aiosession.set(ClientSession())
+
         try:
             if not self.use_chat_completion:
                 completion_tokens = 400 if self.config.llm_max_tokens == 0 else self.config.llm_max_tokens
@@ -163,7 +164,21 @@ class OpenAI(LLMSource):
         if cur_token_count > GPT_3_MAX_TOKENS:
             raise Exception(f"Please shorten your reminder / initial prompt. Max token count exceeded: {cur_token_count} > {GPT_3_MAX_TOKENS}")
 
-        for i in self.db.get_recent_messages(self.config.llm_context_messages_count):
+        all_messages = self.db.get_recent_messages()
+        recent_messages = all_messages[-self.config.llm_context_messages_count:]
+        ooc_messages = all_messages[:-self.config.llm_context_messages_count]  # everything but the messages in the context limit
+
+        similar_messages = []
+        if self.config.openai_use_embeddings and ooc_messages:
+            similar_matches = self.similar_messages(recent_messages[-1], ooc_messages)
+            if similar_matches:
+                logger.debug("Bot will be reminded of:\n\t" + '\n\t'.join([f"{message[1]} ({round(similarity * 100)}% similar)" for message, similarity in similar_matches]))
+                # sort by message_id
+                messages, similarities = list(zip(*similar_matches))
+                similar_messages = list(messages)
+                similar_messages.sort(key=lambda m: m[2])
+
+        for i in similar_messages+recent_messages:
             fmt_message = ""
             author_id, content, message_id = i
             if author_id == -1:
@@ -192,6 +207,17 @@ class OpenAI(LLMSource):
         logger.debug(f"Context: {context}")
         return context
 
+    def similar_messages(self, last_message, messages_pool):
+        similar_matches = []
+        similarity_threshold = self.config.openai_similarity_threshold  # messages with a similarity rating equal to or above this number will be included in the reminder.
+        # get embedding for last message
+        last_message_embedding = self.db.query_embedding(last_message[2])
+        if last_message_embedding:
+            similar_matches = self.db.get_most_similar(last_message_embedding, threshold=similarity_threshold, messages_pool=messages_pool)[:self.config.openai_max_similar_messages]
+        else:
+            logger.warn("Unable to find embedding for message " + last_message[2])
+        return similar_matches
+
     def get_context_gpt4(self, invoker: discord.User = None) -> list[dict]:
         self.update_encoding()
         initial = self.get_initial(invoker)
@@ -204,6 +230,8 @@ class OpenAI(LLMSource):
         if cur_token_count > max_token_count:
             raise Exception(f"Please shorten your reminder / initial prompt. Max token count exceeded: {cur_token_count} > {max_token_count}")
 
+        ret = []
+
         def format_message(message):
             author_id, content, mid = message
             role = "user"
@@ -214,9 +242,24 @@ class OpenAI(LLMSource):
 
             return {"role": role, "content": content}
 
-        fmt_messages = list(map(format_message, self.db.get_recent_messages(self.config.llm_context_messages_count)))
+        all_messages = self.db.get_recent_messages()
+        recent_messages = all_messages[-self.config.llm_context_messages_count:]
+        ooc_messages = all_messages[:-self.config.llm_context_messages_count]  # everything but the messages in the context limit
 
-        ret = [{"role": "system", "content": initial}]
+        similar_messages = []
+        if self.config.openai_use_embeddings and ooc_messages:
+            similar_matches = self.similar_messages(recent_messages[-1], ooc_messages)
+            if similar_matches:
+                logger.debug("Bot will be reminded of:\n\t"+'\n\t'.join([f"{message[1]} ({round(similarity * 100)}% similar)" for message, similarity in similar_matches]))
+                # sort by message_id
+                messages, similarities = list(zip(*similar_matches))
+                similar_messages = list(messages)
+                similar_messages.sort(key=lambda m: m[2])
+
+        ret.append({"role": "system", "content": initial})
+
+        fmt_messages = list(map(format_message, similar_messages+recent_messages))
+
         for m in fmt_messages:
             token_count = self.get_token_count(m)
             if cur_token_count + token_count > max_token_count:

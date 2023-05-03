@@ -10,7 +10,7 @@ class TTSSource:
         self.client = client
 
     # Returns the raw audio bytes
-    async def generate_speech(self, content: str) -> io.BufferedIOBase:
+    async def generate_speech(self, content: str) -> io.BytesIO:
         return NotImplementedError()
 
     def list_voices(self) -> list[SelectOption]:

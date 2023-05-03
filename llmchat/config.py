@@ -44,12 +44,39 @@ class Config:
         self.save()
 
     @property
+    def openai_use_embeddings(self) -> bool:
+        return self._config.getboolean("OpenAI", "use_embeddings", fallback=False)
+
+    @openai_use_embeddings.setter
+    def openai_use_embeddings(self, use_embeddings):
+        self._config.set("OpenAI", "use_embeddings", "true" if use_embeddings else "false")
+        self.save()
+
+    @property
+    def openai_similarity_threshold(self) -> float:
+        return self._config.getfloat("OpenAI", "similarity_threshold", fallback=0.83)
+
+    @openai_similarity_threshold.setter
+    def openai_similarity_threshold(self, similarity_threshold):
+        self._config.set("OpenAI", "similarity_threshold", str(similarity_threshold))
+        self.save()
+
+    @property
+    def openai_max_similar_messages(self) -> int:
+        return self._config.getint("OpenAI", "max_similar_messages", fallback=5)
+
+    @openai_max_similar_messages.setter
+    def openai_max_similar_messages(self, max_similar_messages):
+        self._config.set("OpenAI", "max_similar_messages", str(max_similar_messages))
+        self.save()
+
+    @property
     def llm_context_messages_count(self) -> int:
         return self._config.getint("LLM", "context_messages_count")
 
     @llm_context_messages_count.setter
     def llm_context_messages_count(self, count):
-        self._config.set("LLM", "context_messages_count", count)
+        self._config.set("LLM", "context_messages_count", str(count))
         self.save()
 
     @property

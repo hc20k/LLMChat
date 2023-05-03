@@ -1,5 +1,6 @@
 import sqlite3
 import discord
+from scipy import spatial
 
 
 class PersistentData:
@@ -29,10 +30,21 @@ class PersistentData:
     )
 	"""
         )
+        self.cursor.execute(
+            """
+    CREATE TABLE IF NOT EXISTS message_embeddings (
+        author_id INTEGER,
+        embedding_str TEXT,
+        content TEXT,
+        message_id INTEGER
+    )
+    """
+        )
         self.connection.commit()
 
     def clear(self):
         self.cursor.execute("DELETE FROM message_history")
+        self.cursor.execute("DELETE FROM message_embeddings")
         self.connection.commit()
         self.create_table()
 
@@ -59,7 +71,15 @@ class PersistentData:
         self.cursor.execute(
             "DELETE FROM message_history WHERE message_id = ?", (message_id,)
         )
+        self.remove_embedding(message_id)
         self.connection.commit()
+
+    def remove_embedding(self, message_id: int):
+        self.cursor.execute(
+            "DELETE FROM message_embeddings WHERE message_id = ?", (message_id,)
+        )
+        self.connection.commit()
+
 
     def set_identity(self, user_id: int, name: str, identity: str):
         self.cursor.execute(
@@ -83,11 +103,16 @@ class PersistentData:
         row = self.cursor.fetchone()
         return row
 
-    def get_recent_messages(self, count: int):
-        self.cursor.execute(
-            "SELECT author_id, content, message_id FROM message_history ORDER BY ROWID DESC LIMIT ?",
-            (count,),
-        )
+    def get_recent_messages(self, count: int = 0):
+        if count == 0:
+            self.cursor.execute(
+                "SELECT author_id, content, message_id FROM message_history ORDER BY ROWID DESC"
+            )
+        else:
+            self.cursor.execute(
+                "SELECT author_id, content, message_id FROM message_history ORDER BY ROWID DESC LIMIT ?",
+                (count,),
+            )
         rows = self.cursor.fetchall()
         rows.reverse()
         return rows
@@ -122,3 +147,42 @@ class PersistentData:
         self.cursor.execute(query, tuple(values))
         rows = self.cursor.fetchall()
         return rows
+
+    def add_discord_message_embedding(self, message: discord.Message, embedding: list[float]):
+        return self.add_embedding((message.author.id, message.content, message.id), embedding)
+
+    def add_embedding(self, message: tuple[int, str, int], embedding: list[float]):
+        author_id, content, message_id = message
+        embedding_str = ','.join(str(e) for e in embedding)
+        self.cursor.execute(
+            "INSERT INTO message_embeddings VALUES (?, ?, ?, ?)",
+            (author_id, embedding_str, content, message_id),
+        )
+        self.connection.commit()
+
+    def query_embedding(self, message_id: int) -> list[float] or None:
+        self.cursor.execute(
+            "SELECT embedding_str FROM message_embeddings WHERE message_id = ?",
+            (message_id,),
+        )
+        row = self.cursor.fetchone()
+        if row is not None:
+            embedding_str = row[0]
+            embedding = [float(e) for e in embedding_str.split(',')]
+            return embedding
+        else:
+            return None
+
+    def get_most_similar(self, embedding: list[float], threshold=0.0, messages_pool: list[tuple[int, str, int]] = None):
+        all_embeddings = []
+        for m in messages_pool or self.get_recent_messages():
+            author_id, content, mid = m
+            message_embedding = self.query_embedding(mid)
+            if message_embedding:
+                similarity = 1 - spatial.distance.cosine(embedding, message_embedding)
+                if similarity != 1 and similarity >= threshold:  # if the similarity is 1 it's the same message
+                    all_embeddings.append((m, similarity))
+
+        # sort based on similarity
+        all_embeddings.sort(key=lambda x: x[1], reverse=True)
+        return all_embeddings
