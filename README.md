@@ -56,7 +56,7 @@ python3.9 update.py -y
 # -y installs required dependencies without user interaction
 # Change python.x if using a different version of Python
 ```
-to install all required dependencies. You will be asked if you want to install the optional dependencies for voice or image recognition in the script.
+to install all required dependencies. You will be asked if you want to install the optional dependencies for voice and/or image recognition in the script.
 
 > NOTE: It's healthy to run `update.py` after a new commit is made, because requirements may be added.
 
@@ -82,7 +82,18 @@ If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to
 
 Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`
 
-### Possible field values:
+### Configuration
+
+Copy the config file
+```bash
+cp config.example.ini config.ini
+```
+
+Edit the config file
+```bash
+nano config.ini
+```
+
 `Discord.active_channels` (a list of text and voice channel ids the bot should interact with, seperated by commas):
 - *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
 
