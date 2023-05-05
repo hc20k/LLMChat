@@ -93,6 +93,20 @@ pip install -r optional/llama-requirements.txt
 
 ## Configuration
 
+Create the bot:
+  
+- Visit [Discord Developer Portal](https://discord.com/developers/applications)
+  - Applications -> New Application  
+- Generate Token for the app (discord_bot_token)  
+  - Select App (Bot) -> Bot -> Reset Token (Save this token for later)
+- Select App (Bot) -> Bot -> and turn on all intents
+- Add Bot to server(s)  
+  - Select App (Bot) -> OAuth2 -> URL Generator -> Select Scope: Bot, applications.commands  
+  - Select Permissions: Administrator
+  > NOTE: Administrator is required for the bot to work properly. If you want to use the bot without Administrator permissions, you can manually select the permissions you want to give the bot.
+  - Open the generated link and add the bot to your desired server(s)
+
+
 Copy the config file
 ```bash
 cp config.example.ini config.ini
@@ -103,39 +117,48 @@ Edit the config file
 nano config.ini
 ```
 
-`Discord.active_channels` (a list of text and voice channel ids the bot should interact with, seperated by commas):
-- *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
-
-`Bot.speech_recognition_service`:
+### [Bot]
+`speech_recognition_service =`:
  - `whisper` - run OpenAI's Whisper locally. (Free)
  - `google` - use Google's online transcription service. (Free)
  - `azure` - use Microsoft Azure's online transcription service. ($)
 
-`Bot.tts_service`:
+`tts_service =`:
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)
  - `azure` - use Azure cognitive services for TTS. ($) (Further configuration in the `Azure` section required)
- - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via PyTorch. (Free)
- - `play.ht` - uses [Play.ht](https://play.ht/) for TTS. API key needed. ($)
- - `bark` - uses local [Bark](https://github.com/suno-ai/bark) models for TTS. Optimal graphics card needed. (Free)
+ - `silero` - uses local [Silero models]
 
-`Bot.llm`:
-- `openai` - use the OpenAI API for inference. (In order to use a reverse proxy, specify `OpenAI.reverse_proxy_url` in your config) ($) (Further configuration in the `OpenAI` section required)
-- `llama` - use a local LLaMA model for inference. (Free) **If you're using this bot for voice chat, LLaMA is not recommended. It is very slow.** (Further configuration in the `LLaMA` section required)
+`audiobook_mode =`
+ - `true` - the bot will read its responses to the user from the text chat.
+ - `false` - the bot will listen in VC and respond with voice.
 
-`Bot.initial_prompt` and `Bot.reminder` wildcards:
-> These are wildcards you can insert into the `Bot.initial_prompt` and `Bot.reminder` options in your config. They will be replaced with their respective values when sent to the LLM.
-- `{bot_name}` - replaced with the bot's name. (set in `Bot.name` or with `/configure`)
-- `{bot_identity}` - replaced with the bot's identity. (set in `Bot.identity` or with `/configure`)
-- `{user_name}` - replaced with your name. (set with `/your_identity`)
-- `{user_identity}` - replaced with your identity. (set with `/your_identity`)
-- `{date}` - replaced with today's date. (in `"%A, %B %d, %Y %H:%M"` format)
-- `{nl}` - replaced with `\n`
+`llm = `:
+ - `openai` - use OpenAI's API for LLM ($ Fast))
+ - `llama` - use a local LLaMA model (Free, requires llama installation and is slower)
 
-`OpenAI`:
- - `use_embeddings` - set this to `true` to enable long term message recollection. This will use the OpenAI API to create embeddings for each message, then rank them by similarity and prepend the message context with the relevant messages.
- - `similarity_threshold` - Messages with a similarity value equal to or above this number will be considered for recollection. Range (0 - 1)
- - `max_similar_messages` - The maximum limit of similar messages to prepend to the bot. (Default: 5)
- - `reverse_proxy_url` - The base URL for an OpenAI reverse proxy, if you need to use one.
+`blip_enabled =`
+ - true - the bot will recognize images and respond to them (requires BLIP, installed from update.py)
+ - false - the bot will not be able to recognize images
+
+### [OpenAI]
+`key =`
+ - Your [OpenAI API key](https://platform.openai.com/account/api-keys)
+`model =`
+ - [Desired model](https://platform.openai.com/docs/models)
+`use_embeddings =`
+    - true - the bot will log and remember past messages and use them to generate more realistic responses (more expensive)
+    - false - the bot will not log past messages and will generate responses based on the past few messages only (less expensive)
+
+### [Discord]
+
+`bot_api_key =`
+ - The token you generated for the bot in the [Discord Developer Portal](https://discord.com/developers/applications)
+`active_channels =`
+ - A list of text and voice channel ids the bot should interact with, seperated by commas
+ - *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
+
+### [Azure], [ElevenLabs], [Silero], [Play.ht]
+Supply your API keys for the service you chose for `tts_service`.
 
 ## Starting The Bot:
 
