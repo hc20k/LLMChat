@@ -5,14 +5,15 @@
 
 ## Features:
     
-- Realistic voice chat support with ElevenLabs, Azure TTS, Play.ht, Silero, or Bark models (NOTE: the voice chat is only stable if one person is speaking at a time)
+- Realistic voice chat support with ElevenLabs, Azure TTS, Play.ht, Silero, or Bark models
+>NOTE: The voice chat is only stable if one person is speaking at a time
+- Image recognition support with BLIP
 - Long term message recalling using OpenAI's embeddings to detect similar topics talked about in the past
 - Custom bot identity and name
 - Support for all OpenAI text completion and chat completion models
 - Support for local LLaMA models
 - Local OpenAI Whisper support for speech recognition (as well as Google and Azure speech recognition)
 - Chat-optimized commands
-- Image recognition support with BLIP
 
 ![Screenshot of messages](assets/repo/message_ss.png)
 
@@ -22,12 +23,12 @@
 
 ### Setting up a Server
 
-You want to setup a server to run the bot on so that it can run 24/7 and when your computer is off. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
+Setup a server to run the bot on so it can run when your computer is off 24/7. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
 
 1. Create a DigitalOcean account [here](https://m.do.co/c/9486feaf370c)
 >Referral link for $200 credit for 60 days. You can use this to run the bot for free for 2 months.
 
-2. Create a droplet
+1. Create a droplet
  - [Open your dashboard](https://cloud.digitalocean.com/droplets)
  - Click "Create" -> "Droplets"
  - Select whatever region is closest to you and doesn't have any notes.
@@ -39,7 +40,7 @@ You want to setup a server to run the bot on so that it can run 24/7 and when yo
  - Enable backups if you want. (This will cost extra but allow you to go back to a previous version of your server if you mess something up.)
  - Create Droplet
 
-3. Connect to your droplet
+2. Connect to your droplet
  - [Open your dashboard](https://cloud.digitalocean.com/droplets)
  - Find your droplet>more>access console
  - Log in as...root>Launch Droplet Console
