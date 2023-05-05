@@ -149,12 +149,12 @@ screen -S name python3.9 main.py
 - `/message_context_count` - (default 20) Sets the amount of messages that are sent to the AI for context. Increasing this number will increase the amount of tokens you'll use.
 - `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
 
-### Info:
-- `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
-- `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
-
 ### Utilties:
 - `/reload_config` - Reloads all of the settings in the config.ini.
 - `/purge` - Deletes all of the messages in the current channel. *DANGEROUS*. I should probably disable this but I use it during testing.
 - `/system [message]` - Allows you to send a message as the `system` role. Only supported for OpenAI models >= gpt-3.5-turbo.
 - `/retry` - Allows you to re-infer the last message, in case you didn't like it.
+
+### Info:
+- `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
+- `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
