@@ -29,6 +29,14 @@ Install ffmpeg
 sudo apt-get install ffmpeg
 ```
 
+Install Python3.9-Dev
+
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt update
+sudo apt install python3.9-dev
+```
+
 ### Using update.py
 
 Simply run 
