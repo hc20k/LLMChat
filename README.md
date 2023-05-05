@@ -76,6 +76,7 @@ git clone https://github.com/hc20k/LLMChat.git
 cd LLMChat
 ```
 
+Manually install the dependencies
 ```bash
 pip install -r requirements.txt
 
@@ -89,10 +90,6 @@ pip3 install torch torchvision torchaudio --index-url https://download.pytorch.o
 # for LLaMA support
 pip install -r optional/llama-requirements.txt
 ```
-
-If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to install PyTorch as well. [Directions here.](https://pytorch.org/get-started/locally/)
-
-Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`
 
 ## Configuration
 
