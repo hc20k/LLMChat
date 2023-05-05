@@ -32,17 +32,15 @@ class OpenAI(LLMSource):
         openai.api_key = self.config.openai_key
 
     def list_models(self) -> list[discord.SelectOption]:
-        openai.aiosession.set(ClientSession())
-        # fix api requestor error
-        all_models = openai.Model.list(api_base=self.config.openai_reverse_proxy_url)
-        openai.aiosession.get().close()
-        ret = [
-            m.id
-            for m in all_models.data
-            if not ("-search-" in m.id or "-similarity-" in m.id)
-        ]
-        ret.sort()
-        return [discord.SelectOption(label=m, value=m, default=self.config.openai_model == m) for m in ret]
+        with ClientSession() as s:
+            all_models = openai.Model.list(api_base=self.config.openai_reverse_proxy_url)
+            ret = [
+                m.id
+                for m in all_models.data
+                if not ("-search-" in m.id or "-similarity-" in m.id)
+            ]
+            ret.sort()
+            return [discord.SelectOption(label=m, value=m, default=self.config.openai_model == m) for m in ret]
 
     def set_model(self, model_id: str) -> None:
         logger.info(f"OpenAI model set to {model_id}")
