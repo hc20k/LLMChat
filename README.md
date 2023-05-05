@@ -135,15 +135,13 @@ After changing the configuration files, start the bot
 python3.9 main.py
 ```
 
-Or run the bot in the background useing [screen](https://www.gnu.org/software/screen/manual/screen.html) to keep it running after you disconnect from your SSH session:
+Or run the bot in the background useing [screen](https://www.gnu.org/software/screen/manual/screen.html) to keep it running after you disconnect from a server.
 ```bash
 screen -S name python3.9 main.py
 # Press `Ctrl+a` then `d` to detach from the running bot.
 ```
 
-### Have fun!
-
-## Command reference
+## Discord / Commands
 
 - `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
 - `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
