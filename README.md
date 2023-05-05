@@ -82,7 +82,7 @@ If you're using BLIP support (`Bot.blip_enabled` is `true`), then you'll have to
 
 Rename the `config.example.ini` file to `config.ini` and replace the fields that say `REPLACE ME`
 
-### Configuration
+## Configuration
 
 Copy the config file
 ```bash
@@ -128,9 +128,17 @@ nano config.ini
  - `max_similar_messages` - The maximum limit of similar messages to prepend to the bot. (Default: 5)
  - `reverse_proxy_url` - The base URL for an OpenAI reverse proxy, if you need to use one.
 
-After changing these values, you can run the bot:
+## Using The Bot:
+
+After changing the configuration files, start the bot
 ```bash
-python main.py
+python3.9 main.py
+```
+
+Or run the bot in the background useing [screen](https://www.gnu.org/software/screen/manual/screen.html) to keep it running after you disconnect from your SSH session:
+```bash
+screen -S name python3.9 main.py
+# Press `Ctrl+a` then `d` to detach from the running bot.
 ```
 
 ### Have fun!
