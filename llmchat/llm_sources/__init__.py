@@ -12,7 +12,7 @@ class LLMSource:
     async def generate_response(self, invoker: User = None) -> str:
         return NotImplementedError()
 
-    def list_models(self) -> list[SelectOption]:
+    async def list_models(self) -> list[SelectOption]:
         return NotImplementedError()
 
     def set_model(self, model_id: str) -> None:

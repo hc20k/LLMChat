@@ -355,7 +355,7 @@ class DiscordClient(discord.Client):
                 raise e
 
             view = discord.ui.View()
-            view.add_item(ui_extensions.PaginationDropdown(options=self.llm.list_models(), callback=llm_callback, on_exception=on_exception))
+            view.add_item(ui_extensions.PaginationDropdown(options=await self.llm.list_models(), callback=llm_callback, on_exception=on_exception))
             view.add_item(ui_extensions.PaginationDropdown(options=self.tts.list_voices(), callback=voice_callback, on_exception=on_exception))
             await ctx.followup.send(content="Select an LLM model or a TTS voice:", view=view)
         except Exception as e:

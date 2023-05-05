@@ -39,7 +39,7 @@ class LLaMA(LLMSource):
         )
         # f16_kv is half precision, n_ctx is context window
 
-    def list_models(self) -> list[discord.SelectOption]:
+    async def list_models(self) -> list[discord.SelectOption]:
         return [discord.SelectOption(label=f, value=f, default=self.config.llama_model_name == f) for f in os.listdir(self.config.llama_search_path)]
 
     def set_model(self, model_id: str) -> None:

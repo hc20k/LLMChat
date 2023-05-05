@@ -31,8 +31,10 @@ class OpenAI(LLMSource):
     def on_config_reloaded(self):
         openai.api_key = self.config.openai_key
 
-    def list_models(self) -> list[discord.SelectOption]:
-        with ClientSession() as s:
+    async def list_models(self) -> list[discord.SelectOption]:
+        async with ClientSession() as c:
+            openai.aiosession.set(c)
+            # fix api requestor error
             all_models = openai.Model.list(api_base=self.config.openai_reverse_proxy_url)
             ret = [
                 m.id
