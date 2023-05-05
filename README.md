@@ -126,7 +126,9 @@ nano config.ini
 `tts_service =`:
  - `elevenlabs` - use ElevenLabs for TTS. ($) (Further configuration in the `ElevenLabs` section required)
  - `azure` - use Azure cognitive services for TTS. ($) (Further configuration in the `Azure` section required)
- - `silero` - uses local [Silero models]
+ - `silero` - uses local [Silero models](https://github.com/snakers4/silero-models) via pytorch. (Free)
+ - `play.ht` - uses [Play.ht](https://play.ht/) for TTS. API key needed. ($)
+ - `bark` - uses local [Bark](https://github.com/suno-ai/bark) models for TTS. Optimal graphics card needed. (Free)
 
 `audiobook_mode =`
  - `true` - the bot will read its responses to the user from the text chat.
@@ -160,7 +162,7 @@ nano config.ini
  - *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
 
 ### [Azure], [ElevenLabs], [Silero], [Play.ht]
-Supply your API keys for the service you chose for `tts_service`.
+Supply your API keys for the service you chose for `tts_service`
 
 ## Starting The Bot:
 
