@@ -143,8 +143,10 @@ nano config.ini
 ### [OpenAI]
 `key =`
  - Your [OpenAI API key](https://platform.openai.com/account/api-keys)
+
 `model =`
  - [Desired model](https://platform.openai.com/docs/models)
+
 `use_embeddings =`
     - true - the bot will log and remember past messages and use them to generate more realistic responses (more expensive)
     - false - the bot will not log past messages and will generate responses based on the past few messages only (less expensive)
