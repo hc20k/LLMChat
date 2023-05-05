@@ -1,6 +1,5 @@
 # LLMChat (dev)
 ### A Discord chatbot that uses GPT-4 (or 3.5, or 3, or LLaMA) for text generation and ElevenLabs (or Azure TTS) for voice chat.
-*Tested with Python 3.9*
 
 **This is actively being improved! Pull requests and issues are very welcome!**
 
@@ -24,19 +23,21 @@
 ### Requirements
 
 - At least 2gb of RAM
+
 - ffmpeg
 ```bash
 sudo apt-get install ffmpeg
 ```
-Install Python3.9-Dev
 
+- Dev version of Python
 ```bash
 sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt update
 sudo apt install python3.9-dev
 ```
+> Tested on Python 3.9 but may work with other versions
 
-Install PortAudio
+- PortAudio
 
 ```bash
 sudo apt-get install portaudio19-dev
