@@ -25,11 +25,9 @@
 
 - At least 2gb of RAM
 - ffmpeg
-
 ```bash
 sudo apt-get install ffmpeg
 ```
-
 Install Python3.9-Dev
 
 ```bash
