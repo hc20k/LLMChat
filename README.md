@@ -48,7 +48,7 @@ sudo apt-get install python3-pip
 sudo apt-get install portaudio19-dev
 ```
 
-### Dependencies
+### Automatically Install Dependencies
 
 Simply run 
 ```bash
@@ -60,7 +60,7 @@ to install all required dependencies. You will be asked if you want to install t
 
 > NOTE: It's healthy to run `update.py` after a new commit is made, because requirements may be added.
 
-### Manual method for Dependencies
+### Manually Install Dependencies
 
 If you were having trouble with the `update.py` script, you can install the dependencies manually using these commands.
 
