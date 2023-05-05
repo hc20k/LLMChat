@@ -128,7 +128,7 @@ nano config.ini
  - `max_similar_messages` - The maximum limit of similar messages to prepend to the bot. (Default: 5)
  - `reverse_proxy_url` - The base URL for an OpenAI reverse proxy, if you need to use one.
 
-## Using The Bot:
+## Starting The Bot:
 
 After changing the configuration files, start the bot
 ```bash
@@ -141,15 +141,20 @@ screen -S name python3.9 main.py
 # Press `Ctrl+a` then `d` to detach from the running bot.
 ```
 
-## Discord / Commands
+## Discord Commands
 
-- `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
-- `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
-- `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
-- `/avatar [url]` - Allows you to easily set the chatbot's avatar to a specific URL.
-- `/purge` - Deletes all of the messages in the current channel. *DANGEROUS*. I should probably disable this but I use it during testing.
+### Bot Settings:
 - `/model` - Allows you to change the current model. If you're in OpenAI mode, it will allow you to select from the OpenAI models. If you're in LLaMA mode, it will allow you to select a file from the `LLaMA.search_path` folder.
-- `/retry` - Allows you to re-infer the last message, in case you didn't like it.
-- `/system [message]` - Allows you to send a message as the `system` role. Only supported for OpenAI models >= gpt-3.5-turbo.
-- `/reload_config` - Reloads all of the settings in the config.ini.
+- `/avatar [url]` - Allows you to easily set the chatbot's avatar to a specific URL.
 - `/message_context_count` - (default 20) Sets the amount of messages that are sent to the AI for context. Increasing this number will increase the amount of tokens you'll use.
+- `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
+
+### Info:
+- `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
+- `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
+
+### Utilties:
+- `/reload_config` - Reloads all of the settings in the config.ini.
+- `/purge` - Deletes all of the messages in the current channel. *DANGEROUS*. I should probably disable this but I use it during testing.
+- `/system [message]` - Allows you to send a message as the `system` role. Only supported for OpenAI models >= gpt-3.5-turbo.
+- `/retry` - Allows you to re-infer the last message, in case you didn't like it.
