@@ -34,8 +34,8 @@ You want to setup a server to run the bot on so that it can run 24/7 and when yo
  - Choose an image>Ubuntu>Ubuntu 20.04 (LTS) x64
  - Droplet Type>Basic
  - CPU options>Premium Intel (Regular is $1 cheaper but much slower.)
- - 2 GB / 1 Intel CPU / 50 GB Disk / 2 TB Transfer (50GB is more than enough storage for this bot.)
- - Choose Authentication Method>Password> Pick a password you will remember.
+ - 2 GB / 1 Intel CPU / 50 GB Disk / 2 TB Transfer (You need at least 2GB of Ram & 50GB of storage is more than enough storage for this bot.)
+ - Choose Authentication Method>Password>Pick a password
  - Enable backups if you want. (This will cost extra but allow you to go back to a previous version of your server if you mess something up.)
  - Create Droplet
 
@@ -174,8 +174,8 @@ nano config.ini
  - [Desired model](https://platform.openai.com/docs/models)
 
 `use_embeddings =`
- - true - the bot will log and remember past messages and use them to generate more realistic responses (more expensive)
- - false - the bot will not log past messages and will generate responses based on the past few messages only (less expensive)
+ - true - the bot will log and remember past messages and use them to generate new responses (more expensive)
+ - false - the bot will not log past messages and will generate responses based on the past few messages (less expensive)
 
 ### [Discord]
 
@@ -186,7 +186,7 @@ nano config.ini
  - *Example*: `1090126458803986483,922580158454562851` or `all` (Bot will interact with every channel)
 
 ### [Azure], [ElevenLabs], [Silero], [Play.ht]
-Supply your API keys for the service you chose for `tts_service`
+Supply your API keys & desired voice for the service you chose for `tts_service`
 
 ## Starting The Bot:
 
