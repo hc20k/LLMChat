@@ -23,6 +23,8 @@
 
 ### Requirements
 
+- At least 2gb of RAM
+
 Install ffmpeg
 
 ```bash
@@ -37,7 +39,13 @@ sudo apt update
 sudo apt install python3.9-dev
 ```
 
-### Using update.py
+Install PortAudio
+
+```bash
+sudo apt-get install portaudio19-dev
+```
+
+### Automatically update and get all other dependencies
 
 Simply run 
 ```bash
