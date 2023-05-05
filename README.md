@@ -180,10 +180,10 @@ screen -S name python3.9 main.py
 ## Discord Commands
 
 ### Bot Settings:
+- `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
 - `/model` - Allows you to change the current model. If you're in OpenAI mode, it will allow you to select from the OpenAI models. If you're in LLaMA mode, it will allow you to select a file from the `LLaMA.search_path` folder.
 - `/avatar [url]` - Allows you to easily set the chatbot's avatar to a specific URL.
 - `/message_context_count` - (default 20) Sets the amount of messages that are sent to the AI for context. Increasing this number will increase the amount of tokens you'll use.
-- `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
 
 ### Utilties:
 - `/reload_config` - Reloads all of the settings in the config.ini.
