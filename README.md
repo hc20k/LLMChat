@@ -37,6 +37,11 @@ sudo apt install python3.9-dev
 ```
 > Tested on Python 3.9 but may work with other versions
 
+- Pip
+```bash
+sudo apt-get install python3-pip
+```
+
 - PortAudio
 
 ```bash
@@ -51,11 +56,11 @@ python3.9 update.py -y
 # -y installs required dependencies without user interaction
 # Change python.x if using a different version of Python
 ```
-to install all required dependencies. You will be asked if you want to install the optional dependencies in the script.
+to install all required dependencies. You will be asked if you want to install the optional dependencies for voice or image recognition in the script.
 
 > NOTE: It's healthy to run `update.py` after a new commit is made, because requirements may be added.
 
-### Manual method
+### Manual method for Dependencies
 
 If you were having trouble with the `update.py` script, you can install the dependencies manually using these commands.
 
@@ -64,10 +69,10 @@ pip install -r requirements.txt
 
 # for voice support (ElevenLabs, bark, Azure, whisper)
 pip install -r optional/voice-requirements.txt
-# also, install ffmpeg
 
 # for BLIP support
 pip install -r optional/blip-requirements.txt
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 # for LLaMA support
 pip install -r optional/llama-requirements.txt
