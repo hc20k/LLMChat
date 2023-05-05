@@ -20,6 +20,30 @@
 
 ## Installation
 
+### Setting up a Server
+
+You want to setup a server to run the bot on so that it can run 24/7 and when your computer is off. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
+
+1. Create a DigitalOcean account [here](https://m.do.co/c/9486feaf370c)
+>Referral link for $200 credit for 60 days. You can use this to run the bot for free for 2 months.
+
+2. Create a droplet
+ - [Open your dashboard](https://cloud.digitalocean.com/droplets)
+ - Click "Create" -> "Droplets"
+ - Select whatever region is closest to you and doesn't have any notes.
+ - Choose an image>Ubuntu>Ubuntu 20.04 (LTS) x64
+ - Droplet Type>Basic
+ - CPU options>Premium Intel (Regular is $1 cheaper but much slower.)
+ - 2 GB / 1 Intel CPU / 50 GB Disk / 2 TB Transfer (50GB is more than enough storage for this bot.)
+ - Choose Authentication Method>Password> Pick a password you will remember.
+ - Enable backups if you want. (This will cost extra but allow you to go back to a previous version of your server if you mess something up.)
+ - Create Droplet
+
+3. Connect to your droplet
+ - [Open your dashboard](https://cloud.digitalocean.com/droplets)
+ - Find your droplet>more>access console
+ - Log in as...root>Launch Droplet Console
+
 ### Requirements
 
 - At least 2gb of RAM
