@@ -24,8 +24,7 @@
 ### Requirements
 
 - At least 2gb of RAM
-
-Install ffmpeg
+- ffmpeg
 
 ```bash
 sudo apt-get install ffmpeg
@@ -45,7 +44,7 @@ Install PortAudio
 sudo apt-get install portaudio19-dev
 ```
 
-### Automatically update and get all other dependencies
+### Dependencies
 
 Simply run 
 ```bash
