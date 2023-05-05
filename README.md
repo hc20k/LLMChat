@@ -18,7 +18,7 @@
 
 > NOTE: Please only use this on small private servers. Right now it is set up for testing only, meaning anyone on the server can invoke its commands. Also, the bot will join voice chat whenever someone else joins!
 
-## Installing the dependencies:
+## Installation
 
 ### Requirements
 
@@ -47,8 +47,9 @@ sudo apt-get install portaudio19-dev
 
 Simply run 
 ```bash
-python update.py -y
+python3.9 update.py -y
 # -y installs required dependencies without user interaction
+# Change python.x if using a different version of Python
 ```
 to install all required dependencies. You will be asked if you want to install the optional dependencies in the script.
 
