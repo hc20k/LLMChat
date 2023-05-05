@@ -1,10 +1,10 @@
-# LLMChat (dev)
-### A Discord chatbot that uses GPT-4 (or 3.5, or 3, or LLaMA) for text generation and ElevenLabs (or Azure TTS) for voice chat.
+# LLMChat
+### A Discord chatbot that uses GPT-4, 3.5, 3, or LLaMA for text generation and ElevenLabs, Azure TTS, or Silero for voice chat.
 
 **This is actively being improved! Pull requests and issues are very welcome!**
 
 ## Features:
-
+    
 - Realistic voice chat support with ElevenLabs, Azure TTS, Play.ht, Silero, or Bark models (NOTE: the voice chat is only stable if one person is speaking at a time)
 - Long term message recalling using OpenAI's embeddings to detect similar topics talked about in the past
 - Custom bot identity and name
@@ -50,6 +50,12 @@ sudo apt-get install portaudio19-dev
 
 ### Automatically Install Dependencies
 
+Clone the project files and cd into the directory
+```bash
+git clone https://github.com/hc20k/LLMChat.git
+cd LLMChat
+```
+
 Simply run 
 ```bash
 python3.9 update.py -y
@@ -63,6 +69,12 @@ to install all required dependencies. You will be asked if you want to install t
 ### Manually Install Dependencies
 
 If you were having trouble with the `update.py` script, you can install the dependencies manually using these commands.
+
+Clone the project files and cd into the directory
+```bash
+git clone https://github.com/hc20k/LLMChat.git
+cd LLMChat
+```
 
 ```bash
 pip install -r requirements.txt
