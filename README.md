@@ -21,6 +21,14 @@
 
 ## Installing the dependencies:
 
+### Requirements
+
+Install ffmpeg
+
+```bash
+sudo apt-get install ffmpeg
+```
+
 ### Using update.py
 
 Simply run 
