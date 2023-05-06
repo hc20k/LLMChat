@@ -1,4 +1,4 @@
-from discord import User, Client, SelectOption
+from discord import User, Client, SelectOption, Embed
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
 import io
@@ -21,6 +21,9 @@ class TTSSource:
 
     @staticmethod
     def _add_silence(buf: io.BufferedIOBase, seconds_of_silence: int) -> io.BufferedIOBase:
+        pass
+
+    def populate_embed(self, embed: Embed):
         pass
 
     @property

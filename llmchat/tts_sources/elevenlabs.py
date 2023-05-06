@@ -3,7 +3,7 @@ import os
 import discord
 
 from . import TTSSource
-from elevenlabs import Voice, generate, voices, is_voice_id
+from elevenlabs import Voice, generate, voices, is_voice_id, api, set_api_key
 from discord import SelectOption
 import io
 import asyncio
@@ -12,7 +12,7 @@ import asyncio
 class ElevenLabs(TTSSource):
     voice_cache: list[Voice] = None
     async def generate_speech(self, content: str) -> io.BufferedIOBase:
-        os.environ["ELEVEN_API_KEY"] = self.config.elevenlabs_key  # elevenlabs bug doesn't use api_key from args
+        set_api_key(self.config.elevenlabs_voice)
         data = await self.client.loop.run_in_executor(None, lambda: generate(content, api_key=self.config.elevenlabs_key, voice=self.config.elevenlabs_voice))
         buf = io.BytesIO(data)
         return buf

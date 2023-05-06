@@ -216,6 +216,7 @@ class DiscordClient(discord.Client):
         if not history_item:
             response = await self.llm.generate_response(ctx.user)
             sent_message = await self.send_message(response, ctx.followup)
+            self.store_embedding((ctx.user.id, response, sent_message[0].id))
             self.db.append(sent_message[0], override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -228,6 +229,7 @@ class DiscordClient(discord.Client):
             # not from me
             response = await self.llm.generate_response(ctx.user)
             sent_message = await self.send_message(response, ctx.followup)
+            self.store_embedding((ctx.user.id, response, sent_message[0].id))
             self.db.append(sent_message[0], override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -237,6 +239,7 @@ class DiscordClient(discord.Client):
             await last_message.edit(content="*Retrying...*")
             self.db.remove(last_message.id)
             response = await self.llm.generate_response(ctx.user)
+
             if len(response) < 2000:
                 await last_message.edit(content=response)
             else:
@@ -244,6 +247,7 @@ class DiscordClient(discord.Client):
                 last_message = await self.send_message(response, ctx.channel)
                 last_message = last_message[0]
 
+            self.store_embedding((ctx.user.id, response, last_message.id))
             self.db.append(last_message, override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -259,8 +263,7 @@ class DiscordClient(discord.Client):
         await self.user.edit(avatar=r.content)
         await ctx.response.send_message(f"Avatar set!", delete_after=3)
 
-    async def send_message(self, text: str, channel: Union[discord.TextChannel, discord.Webhook]) -> list[
-        discord.Message]:
+    async def send_message(self, text: str, channel: Union[discord.TextChannel, discord.Webhook]) -> list[discord.Message]:
         # message splitting
         all_messages = []
         initial_message: Union[discord.Message, None] = None
