@@ -25,8 +25,7 @@
 
 Setup a server to run the bot on so it can run when your computer is off 24/7. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
 
-1. Create a DigitalOcean account [here](https://m.do.co/c/9486feaf370c)
->Referral link for $200 credit for 60 days. You can use this to run the bot for free for 2 months.
+1. Create a DigitalOcean account [here](https://cloud.digitalocean.com/registrations/new)
 
 1. Create a droplet
  - [Open your dashboard](https://cloud.digitalocean.com/droplets)
