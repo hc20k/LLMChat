@@ -1,6 +1,5 @@
 import asyncio
 import io
-import subprocess
 import discord
 import requests
 from PIL import Image
@@ -8,6 +7,7 @@ from typing import Union
 from discord import app_commands
 from discord.interactions import Interaction
 import openai
+from aiohttp import ClientSession
 import ui_extensions
 
 from blip import BLIP
@@ -216,7 +216,7 @@ class DiscordClient(discord.Client):
         if not history_item:
             response = await self.llm.generate_response(ctx.user)
             sent_message = await self.send_message(response, ctx.followup)
-            self.store_embedding((ctx.user.id, response, sent_message[0].id))
+            await self.store_embedding((ctx.user.id, response, sent_message[0].id))
             self.db.append(sent_message[0], override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -229,7 +229,7 @@ class DiscordClient(discord.Client):
             # not from me
             response = await self.llm.generate_response(ctx.user)
             sent_message = await self.send_message(response, ctx.followup)
-            self.store_embedding((ctx.user.id, response, sent_message[0].id))
+            await self.store_embedding((ctx.user.id, response, sent_message[0].id))
             self.db.append(sent_message[0], override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -247,7 +247,7 @@ class DiscordClient(discord.Client):
                 last_message = await self.send_message(response, ctx.channel)
                 last_message = last_message[0]
 
-            self.store_embedding((ctx.user.id, response, last_message.id))
+            await self.store_embedding((ctx.user.id, response, last_message.id))
             self.db.append(last_message, override_content=response)
             if self.config.bot_audiobook_mode and ctx.guild.voice_client:
                 await self.say(response, ctx.guild.voice_client, ctx.channel)
@@ -491,16 +491,18 @@ class DiscordClient(discord.Client):
         self.event(self.on_voice_state_update)
         logger.info("Initialization complete.")
 
-    def store_embedding(self, message: tuple[int, str, int]):
+    async def store_embedding(self, message: tuple[int, str, int]):
         author_id, content, message_id = message
         if self.config.openai_use_embeddings and self.llm.is_openai:
-            embedding = openai.Embedding.create(api_base=self.config.openai_reverse_proxy_url, input=content, model="text-embedding-ada-002")
-            self.db.add_embedding(message, embedding['data'][0]['embedding'])
-            logger.debug("Added embedding for message " + str(message_id))
+            async with ClientSession() as s:
+                openai.aiosession.set(s)
+                embedding = await openai.Embedding.acreate(api_base=self.config.openai_reverse_proxy_url, input=content, model="text-embedding-ada-002")
+                self.db.add_embedding(message, embedding['data'][0]['embedding'])
+                logger.debug("Added embedding for message " + str(message_id))
 
     async def on_speech(self, speaker_id, speech):
         speaker = discord.utils.get(self.get_all_members(), id=speaker_id)
-        self.store_embedding((speaker_id, speech, -1))
+        await self.store_embedding((speaker_id, speech, -1))
 
         vc: discord.VoiceClient = speaker.guild.voice_client
         if not vc:
@@ -508,7 +510,7 @@ class DiscordClient(discord.Client):
 
         self.db.speech(speaker, speech)
         response = await self.llm.generate_response(speaker)
-        self.store_embedding((self.user.id, response, -1))
+        await self.store_embedding((self.user.id, response, -1))
         self.db.speech(self.user, response)
 
         vc.stop()
@@ -562,7 +564,7 @@ class DiscordClient(discord.Client):
 
         if payload.cached_message:
             self.db.remove_embedding(payload.cached_message.id)  # remove existing
-            self.store_embedding((payload.cached_message.author.id, payload.data["content"], payload.cached_message.id))  # regenerate
+            await self.store_embedding((payload.cached_message.author.id, payload.data["content"], payload.cached_message.id))  # regenerate
 
     async def say(self, text: str, vc: discord.VoiceClient, text_channel_ctx: discord.TextChannel = None, after=None):
         try:
@@ -606,7 +608,7 @@ class DiscordClient(discord.Client):
                 message.content += f"\n[{caption}]"
 
         self.db.append(message)
-        self.store_embedding((message.author.id, message.content, message.id))
+        await self.store_embedding((message.author.id, message.content, message.id))
 
         async with message.channel.typing():
             try:
@@ -640,4 +642,4 @@ class DiscordClient(discord.Client):
         assert sent_message
         self.db.append(sent_message, override_content=response)
 
-        self.store_embedding((self.user.id, response, sent_message.id))
+        await self.store_embedding((self.user.id, response, sent_message.id))
