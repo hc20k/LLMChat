@@ -5,14 +5,13 @@ from llmchat.logger import logger
 import discord
 import os
 from langchain.llms import LlamaCpp
-import concurrent.futures
-import asyncio
-
+import functools
+import time
 
 class LLaMA(LLMSource):
+    model: LlamaCpp = None
     def __init__(self, client: discord.Client, config: Config, db: PersistentData):
         super(LLaMA, self).__init__(client, config, db)
-        self.model = None
         self.load_model()
 
     def load_model(self):
@@ -31,11 +30,10 @@ class LLaMA(LLMSource):
 
         self.model = LlamaCpp(
             model_path=model_path,
-            f16_kv=False,
-            n_ctx=8000,
-            max_tokens=self.config.llm_max_tokens,
+            n_ctx=2048,
+            max_tokens=self.config.llm_max_tokens or 256,
             temperature=self.config.llm_temperature,
-            repeat_penalty=self.config.llm_frequency_penalty,
+            repeat_penalty=self.config.llm_frequency_penalty,  # ~1.1 is a good value
         )
         # f16_kv is half precision, n_ctx is context window
 
@@ -47,7 +45,7 @@ class LLaMA(LLMSource):
         self.load_model()
 
     async def get_context(self, invoker: discord.User = None):
-        context = self.get_initial(invoker).strip() + " Each message is separated by a new line followed by '$$$'.\n"
+        context = self.get_initial(invoker).strip() + "\n"
 
         for i in self.db.get_recent_messages(self.config.llm_context_messages_count):
             author_id, content, message_id = i
@@ -63,13 +61,25 @@ class LLaMA(LLMSource):
                     name = name_
 
                 context += f"{name}: {content}"
-            context += "\n$$$\n"
+            context += "\n"
 
         if self.config.bot_reminder:
             context += f"Reminder: {self._insert_wildcards(self.config.bot_reminder, self.db.get_identity(invoker.id))}\n"
 
         context += f"{self.config.bot_name}: "
         return context
+
+    def _generate(self, context: str) -> str:
+        ret = ""
+        start_time = time.time()
+        for chunk in self.model.stream(context, stop=["\n"]):
+            ret += chunk["choices"][0]["text"]
+            logger.debug(ret)
+
+        logger.debug(f"Generation took {time.time() - start_time}s")
+        if not len(ret):
+            raise Exception("LLM generated an empty message!")
+        return ret
 
     async def generate_response(self, invoker: discord.User = None) -> str:
         if self.model is None:
@@ -78,15 +88,9 @@ class LLaMA(LLMSource):
         context = await self.get_context(invoker)
         logger.debug(context)
 
-        # Run the self.model call in a separate thread so we don't block heartbeat
-        # Any ideas why this is painfully slow? Even on my i7-10700K it's painfully slower than it should be.
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(self.model, context, {"stop": ["$$$"]})
+        blocking = functools.partial(self._generate, context)
+        return await self.client.loop.run_in_executor(None, blocking)
 
-            while not future.done():
-                await asyncio.sleep(0)
-
-            return future.result()
 
     @property
     def current_model_name(self) -> str:

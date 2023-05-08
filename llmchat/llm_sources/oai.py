@@ -108,7 +108,7 @@ class OpenAI(LLMSource):
                         api_base=self.config.openai_reverse_proxy_url,
                         model=self.config.openai_model,
                         prompt=prompt,
-                        stop="\n$$$",
+                        stop="\n",
                         max_tokens=completion_tokens,
                         temperature=self.config.llm_temperature,
                         presence_penalty=self.config.llm_presence_penalty,
@@ -153,7 +153,7 @@ class OpenAI(LLMSource):
 
     async def get_context_gpt3(self, invoker: discord.User = None) -> str:
         self.update_encoding()
-        context = self.get_initial(invoker).strip() + " Each message is separated by a new line followed by '$$$'.\n"
+        context = self.get_initial(invoker).strip() + "\n"
         reminder = f"Reminder: {self._insert_wildcards(self.config.bot_reminder, self.db.get_identity(invoker.id))}\n" if self.config.bot_reminder else ""
         end = reminder + f"{self.config.bot_name}: "
 
@@ -192,7 +192,7 @@ class OpenAI(LLMSource):
                     name = name_
 
                 fmt_message += f"{name}: {content}"
-            fmt_message += "\n$$$\n"
+            fmt_message += "\n"
             token_count = self.get_token_count(fmt_message)
             if cur_token_count + token_count > GPT_3_MAX_TOKENS:
                 logger.warn(f"Maximum token count reached ({cur_token_count} + {token_count} > {GPT_3_MAX_TOKENS}). Context will be shorter than expected.")

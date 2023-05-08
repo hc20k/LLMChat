@@ -11,7 +11,7 @@
 - Long term message recalling using OpenAI's embeddings to detect similar topics talked about in the past
 - Custom bot identity and name
 - Support for all OpenAI text completion and chat completion models
-- Support for local LLaMA models
+- Support for local LLaMA (GGML) models
 - Local OpenAI Whisper support for speech recognition (as well as Google and Azure speech recognition)
 - Chat-optimized commands
 
@@ -160,7 +160,7 @@ nano config.ini
 
 `llm = `:
  - `openai` - use OpenAI's API for LLM ($ Fast))
- - `llama` - use a local LLaMA model (Free, requires llama installation and is slower)
+ - `llama` - use a local LLaMA (GGML) model (Free, requires llama installation and is slower)
 
 `blip_enabled =`
  - true - the bot will recognize images and respond to them (requires BLIP, installed from update.py)
