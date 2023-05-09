@@ -1,4 +1,4 @@
-from logger import logger
+from llmchat import logger
 from PIL.Image import Image
 
 class BLIP:

@@ -8,17 +8,17 @@ from discord import app_commands
 from discord.interactions import Interaction
 import openai
 from aiohttp import ClientSession
-import ui_extensions
+from llmchat import ui_extensions
 
-from blip import BLIP
-from config import Config
-from logger import logger, console_handler, color_formatter
-from voice_support import BufferAudioSink
-from persistence import PersistentData
+from llmchat.blip import BLIP
+from llmchat.config import Config
+from llmchat import logger, console_handler, color_formatter
+from llmchat.voice_support import BufferAudioSink
+from llmchat.persistence import PersistentData
 
-from llm_sources import LLMSource
-from tts_sources import TTSSource
-from sr_sources import SRSource
+from llmchat.llm_sources import LLMSource
+from llmchat.tts_sources import TTSSource
+from llmchat.sr_sources import SRSource
 
 
 class DiscordClient(discord.Client):
@@ -129,19 +129,19 @@ class DiscordClient(discord.Client):
         params = [self, self.config, self.db]
 
         if self.config.bot_tts_service == "elevenlabs":
-            from tts_sources.elevenlabs import ElevenLabs
+            from llmchat.tts_sources.elevenlabs import ElevenLabs
             self.tts = ElevenLabs(*params)
         elif self.config.bot_tts_service == "azure":
-            from tts_sources.azure import Azure
+            from llmchat.tts_sources.azure import Azure
             self.tts = Azure(*params)
         elif self.config.bot_tts_service == "silero":
-            from tts_sources.silero import SileroTTS
+            from llmchat.tts_sources.silero import SileroTTS
             self.tts = SileroTTS(*params)
         elif self.config.bot_tts_service == "bark":
-            from tts_sources.bark import Bark
+            from llmchat.tts_sources.bark import Bark
             self.tts = Bark(*params)
         elif self.config.bot_tts_service == "play.ht":
-            from tts_sources.playht import PlayHt
+            from llmchat.tts_sources.playht import PlayHt
             self.tts = PlayHt(*params)
         else:
             logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}")
@@ -150,10 +150,10 @@ class DiscordClient(discord.Client):
         logger.info(f"LLM: {self.config.bot_llm}")
         params = [self, self.config, self.db]
         if self.config.bot_llm == "openai":
-            from llm_sources.oai import OpenAI
+            from llmchat.llm_sources.oai import OpenAI
             self.llm = OpenAI(*params)
         elif self.config.bot_llm == "llama":
-            from llm_sources.llama import LLaMA
+            from llmchat.llm_sources.llama import LLaMA
             self.llm = LLaMA(*params)
         else:
             logger.critical(f"Unknown LLM: {self.config.bot_llm}")
@@ -165,13 +165,13 @@ class DiscordClient(discord.Client):
         logger.info(f"Speech recognition service: {self.config.bot_speech_recognition_service}")
         params = [self, self.config, self.db]
         if self.config.bot_speech_recognition_service == "whisper":
-            from sr_sources.whisper import Whisper
+            from llmchat.sr_sources.whisper import Whisper
             self.sr = Whisper(*params)
         elif self.config.bot_speech_recognition_service == "google":
-            from sr_sources.google import Google
+            from llmchat.sr_sources.google import Google
             self.sr = Google(*params)
         elif self.config.bot_speech_recognition_service == "azure":
-            from sr_sources.azure import Azure
+            from llmchat.sr_sources.azure import Azure
             self.sr = Azure(*params)
         else:
             logger.critical(f"Unknown speech recognition service: {self.config.bot_speech_recognition_service}")

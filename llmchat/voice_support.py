@@ -1,12 +1,10 @@
 import threading
 import discord
-import speech_recognition
 import speech_recognition as sr
-import pyaudio
 import numpy as np
 import asyncio
-from logger import logger
-from sr_sources import SRSource
+from llmchat import logger
+from llmchat.sr_sources import SRSource
 import time
 
 class BufferAudioSink(discord.AudioSink):
