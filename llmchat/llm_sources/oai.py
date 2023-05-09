@@ -21,7 +21,7 @@ class OpenAI(LLMSource):
 
     async def check_model(self):
         assert (
-            self.config.openai_model in self.list_models()
+            self.config.openai_model in await self.list_models()
         ), f"Failed to find OpenAI model!"
         if self.use_chat_completion:
             logger.warn(
@@ -35,7 +35,7 @@ class OpenAI(LLMSource):
         async with ClientSession() as c:
             openai.aiosession.set(c)
             # fix api requestor error
-            all_models = openai.Model.list(api_base=self.config.openai_reverse_proxy_url)
+            all_models = await openai.Model.alist(api_base=self.config.openai_reverse_proxy_url)
             ret = [
                 m.id
                 for m in all_models.data
