@@ -1,3 +1,5 @@
+import torch.cuda
+
 from llmchat import logger
 from PIL.Image import Image
 
@@ -15,3 +17,8 @@ class BLIP:
         inputs = self.processor(image, "Image attached of", return_tensors="pt").to(self.device, torch.float16)
         generated_ids = self.model.generate(**inputs)
         return self.processor.decode(generated_ids[0], skip_special_tokens=True)
+
+    def __del__(self):
+        del self.model
+        del self.processor
+        torch.cuda.empty_cache()

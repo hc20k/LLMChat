@@ -21,9 +21,9 @@
 
 ## Installation
 
-### Setting up a Server
+### Setting up a server
 
-Setup a server to run the bot on so it can run when your computer is off 24/7. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
+Setup a server to run the bot on, so it can run when your computer is off 24/7. For this guide, I will be using DigitalOcean, but you can use any server host you want. Skip this section if you already have a server or want to run it locally.
 
 1. Create a DigitalOcean account [here](https://cloud.digitalocean.com/registrations/new)
 
@@ -50,7 +50,9 @@ Setup a server to run the bot on so it can run when your computer is off 24/7. F
 
 - ffmpeg
 ```bash
+# Linux:
 sudo apt-get install ffmpeg
+# For Windows, install from here: https://ffmpeg.org/download.html
 ```
 
 - Dev version of Python
@@ -74,45 +76,33 @@ sudo apt-get install portaudio19-dev
 
 ### Automatically Install Dependencies
 
-Clone the project files and cd into the directory
-```bash
-git clone https://github.com/hc20k/LLMChat.git
-cd LLMChat
-```
-
 Simply run 
 ```bash
-python3.9 update.py -y
-# -y installs required dependencies without user interaction
-# Change python.x if using a different version of Python
+pip3.9 install git@github.com:hc20k/LLMChat.git[blip,llama,voice]
+# Change pip.x if using a different version of Python
 ```
-to install all required dependencies. You will be asked if you want to install the optional dependencies for voice and/or image recognition in the script.
+to install all required dependencies. If you don't want to install any extra features, remove the `blip` (image recognition), `llama` (LLaMA support), and/or `voice` (voice chat support) from the command.
 
-> NOTE: It's healthy to run `update.py` after a new commit is made, because requirements may be added.
+> NOTE: In order to update to the latest commit, run `pip3.9 install git@github.com:hc20k/LLMChat.git[blip,llama,voice] --upgrade`
 
-### Manually Install Dependencies
+### Manual Install
 
-If you were having trouble with the `update.py` script, you can install the dependencies manually using these commands.
-
-Clone the project files and cd into the directory
+Clone the repo:
 ```bash
-git clone https://github.com/hc20k/LLMChat.git
+git clone git@github.com:hc20k/LLMChat.git
+```
+
+Install from source:
+```bash
 cd LLMChat
+python3.9 setup.py install
 ```
 
-Manually install the dependencies
+Run:
 ```bash
-pip install -r requirements.txt
-
-# for voice support (ElevenLabs, bark, Azure, whisper)
-pip install -r optional/voice-requirements.txt
-
-# for BLIP support
-pip install -r optional/blip-requirements.txt
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-# for LLaMA support
-pip install -r optional/llama-requirements.txt
+python main.py
+# or 
+llmchat
 ```
 
 ## Configuration
@@ -131,8 +121,11 @@ Create the bot:
   - Open the generated link and add the bot to your desired server(s)
 
 
-Copy the config file
+Create the config file
 ```bash
+llmchat # running the cli will drop the example config file
+
+# or if you're running from source:
 cp config.example.ini config.ini
 ```
 
@@ -159,12 +152,12 @@ nano config.ini
  - `false` - the bot will listen in VC and respond with voice.
 
 `llm = `:
- - `openai` - use OpenAI's API for LLM ($ Fast))
- - `llama` - use a local LLaMA (GGML) model (Free, requires llama installation and is slower)
+ - `openai` - use OpenAI's API for LLM ($ Fast)
+ - `llama` - use a local LLaMA (GGML) model (Free, requires `llama` installation and is slower)
 
 `blip_enabled =`
- - true - the bot will recognize images and respond to them (requires BLIP, installed from update.py)
- - false - the bot will not be able to recognize images
+ - `true` - the bot will recognize images and respond to them (requires `blip` installation)
+ - `false` - the bot will not be able to recognize images
 
 ### [OpenAI]
 `key =`
@@ -174,8 +167,10 @@ nano config.ini
  - [Desired model](https://platform.openai.com/docs/models)
 
 `use_embeddings =`
- - true - the bot will log and remember past messages and use them to generate new responses (more expensive)
- - false - the bot will not log past messages and will generate responses based on the past few messages (less expensive)
+
+[What are embeddings?](https://platform.openai.com/docs/guides/embeddings)
+ - `true` - the bot will create embeddings for each message and will be able to recall highly relevant information, ensuring more accurate responses (more expensive)
+ - `false` - the bot will NOT create embeddings for each message and will be less likely to recall relevant information (less expensive)
 
 ### [Discord]
 
@@ -192,16 +187,16 @@ Supply your API keys & desired voice for the service you chose for `tts_service`
 
 After changing the configuration files, start the bot
 ```bash
-python3.9 main.py
+llmchat
 ```
 
-Or run the bot in the background useing [screen](https://www.gnu.org/software/screen/manual/screen.html) to keep it running after you disconnect from a server.
+Or run the bot in the background using [screen](https://www.gnu.org/software/screen/manual/screen.html) to keep it running after you disconnect from a server.
 ```bash
-screen -S name python3.9 main.py
+screen -S name llmchat
 # Press `Ctrl+a` then `d` to detach from the running bot.
 ```
 
-## Discord Commands
+## Discord commands
 
 ### Bot Settings:
 - `/configure` - Allows you to set the chatbot's name, identity description, and optional reminder text (a context clue sent further along in the transcript so the AI will consider it more)
@@ -209,7 +204,7 @@ screen -S name python3.9 main.py
 - `/avatar [url]` - Allows you to easily set the chatbot's avatar to a specific URL.
 - `/message_context_count` - (default 20) Sets the amount of messages that are sent to the AI for context. Increasing this number will increase the amount of tokens you'll use.
 
-### Utilties:
+### Utilities:
 - `/reload_config` - Reloads all of the settings in the config.ini.
 - `/purge` - Deletes all of the messages in the current channel. *DANGEROUS*. I should probably disable this but I use it during testing.
 - `/system [message]` - Allows you to send a message as the `system` role. Only supported for OpenAI models >= gpt-3.5-turbo.
@@ -218,3 +213,6 @@ screen -S name python3.9 main.py
 ### Info:
 - `/print_info` - Prints some info about the bot. (Its name, identity, and model as well as your name and identity)
 - `/your_identity` - Allows you to set your own name and identity (What the chatbot knows about you)
+
+## CLI arguments
+- `--config-path [path]` - Override the path to config.ini

@@ -575,6 +575,7 @@ class DiscordClient(discord.Client):
                 f.write(buf.getbuffer())
 
             def _after(e):
+                del buf
                 if after:
                     after(e)
                 if e:

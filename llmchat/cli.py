@@ -14,17 +14,18 @@ def main():
 
     if not os.path.exists(args.config_path):
         logger.fatal(f"Config not found @ {args.config_path}. Copying example config to this path, please follow the instructions in the README.md to properly configure it.")
-        try:
-            import importlib.resources as pkg_resources
-        except ImportError:
-            # Try backported to PY<37 `importlib_resources`.
-            import importlib_resources as pkg_resources
 
-        example = pkg_resources.read_text(llmchat, "config.example.ini")
-        with open(args.config_path, 'w') as f:
-            f.write(example)
+        if os.path.exists("config.example.ini"):
+            import shutil
+            shutil.copy("config.example.ini", args.config_path)
+        else:
+            import importlib.resources as pkg_resources
+            example = pkg_resources.read_text(llmchat, "config.example.ini")
+            with open(args.config_path, 'w') as f:
+                f.write(example)
 
         return
 
     config = Config(args.config_path)
     client = DiscordClient(config)
+
