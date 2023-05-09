@@ -109,6 +109,13 @@ class DiscordClient(discord.Client):
         )
         self.tree.add_command(
             app_commands.Command(
+                name="audiobook_mode",
+                description="Toggles audiobook mode. (Description in README)",
+                callback=self.set_audiobook_mode,
+            )
+        )
+        self.tree.add_command(
+            app_commands.Command(
                 name="reload_config",
                 description="Reloads the settings from config.ini.",
                 callback=self.reload_config,
@@ -256,6 +263,20 @@ class DiscordClient(discord.Client):
         self.config.llm_context_messages_count = count
         await ctx.response.send_message(
             f"Set message context count to {count}", delete_after=3
+        )
+
+    async def set_audiobook_mode(self, ctx: Interaction, status: bool):
+        self.config.bot_audiobook_mode = status
+        vc: discord.VoiceClient = ctx.guild.voice_client
+        if vc.is_connected():
+            if self.config.bot_audiobook_mode:
+                vc.stop_listening()
+            else:
+                self.sink = BufferAudioSink(self.sr, self.on_speech, self.loop)
+                vc.listen(self.sink)
+
+        await ctx.response.send_message(
+            f"Audiobook mode is now **{'on' if status else 'off'}**.", delete_after=3
         )
 
     async def set_avatar(self, ctx: Interaction, url: str):
@@ -505,7 +526,7 @@ class DiscordClient(discord.Client):
         await self.store_embedding((speaker_id, speech, -1))
 
         vc: discord.VoiceClient = speaker.guild.voice_client
-        if not vc:
+        if not vc.is_connected():
             return
 
         self.db.speech(speaker, speech)
@@ -529,9 +550,6 @@ class DiscordClient(discord.Client):
         if not after.channel:
             # member left channel, check to see if there are any more members there
             if len(before.channel.members) == 1 and member.guild.voice_client:
-                # leave
-                if self.sink:
-                    self.sink.on_leave()
                 await member.guild.voice_client.disconnect(force=True)
         elif before.channel is None and after.channel is not None:
             # member joined channel, join if you haven't already

@@ -76,10 +76,6 @@ class BufferAudioSink(discord.AudioSink):
     def cleanup(self):
         pass
 
-    def on_leave(self):
-        logger.debug("Cleaning up")
-        self.stop_listen()
-
     def on_rtcp(self, packet: discord.RTCPPacket):
         pass
 
