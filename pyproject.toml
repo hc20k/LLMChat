@@ -14,10 +14,10 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [options.packages.find]
-where = ""
+where = "."
 
 [tool.setuptools.package-data]
 "llmchat" = ["../config.example.ini"]
 
 [tool.setuptools]
-packages = ["llmchat"]
+packages = ["llmchat", "llmchat.llm_sources", "llmchat.sr_sources", "llmchat.tts_sources"]
