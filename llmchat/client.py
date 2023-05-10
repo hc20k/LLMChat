@@ -268,7 +268,7 @@ class DiscordClient(discord.Client):
     async def set_audiobook_mode(self, ctx: Interaction, status: bool):
         self.config.bot_audiobook_mode = status
         vc: discord.VoiceClient = ctx.guild.voice_client
-        if vc.is_connected():
+        if vc and vc.is_connected():
             if self.config.bot_audiobook_mode:
                 vc.stop_listening()
             else:
@@ -526,7 +526,7 @@ class DiscordClient(discord.Client):
         await self.store_embedding((speaker_id, speech, -1))
 
         vc: discord.VoiceClient = speaker.guild.voice_client
-        if not vc.is_connected():
+        if not vc or not vc.is_connected():
             return
 
         self.db.speech(speaker, speech)
