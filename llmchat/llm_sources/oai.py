@@ -113,6 +113,7 @@ class OpenAI(LLMSource):
                         temperature=self.config.llm_temperature,
                         presence_penalty=self.config.llm_presence_penalty,
                         frequency_penalty=self.config.llm_frequency_penalty,
+                        request_timeout=30,
                     )
                     logger.debug(f"{response.usage.total_tokens} tokens used")
                     response = response.choices[0].text.strip()
@@ -137,6 +138,7 @@ class OpenAI(LLMSource):
                         temperature=self.config.llm_temperature,
                         presence_penalty=self.config.llm_presence_penalty,
                         frequency_penalty=self.config.llm_frequency_penalty,
+                        request_timeout=30,
                     )
                     logger.debug(f"{response.usage.total_tokens} tokens used")
                     response = response.choices[0].message.content.strip()

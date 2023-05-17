@@ -59,4 +59,4 @@ class PaginationDropdown(discord.ui.Select):
             if self._on_exception:
                 self._on_exception(e)
             else:
-                raise e
+                raise
