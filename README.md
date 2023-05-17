@@ -78,12 +78,19 @@ sudo apt-get install portaudio19-dev
 
 Simply run 
 ```bash
-pip3.9 install git@github.com:hc20k/LLMChat.git[blip,llama,voice]
+pip3.9 install "LLMChat[blip,llama,voice] @ git+https://github.com/hc20k/LLMChat.git"
 # Change pip.x if using a different version of Python
 ```
 to install all required dependencies. If you don't want to install any extra features, remove the `blip` (image recognition), `llama` (LLaMA support), and/or `voice` (voice chat support) from the command.
 
-> NOTE: In order to update to the latest commit, run `pip3.9 install git@github.com:hc20k/LLMChat.git[blip,llama,voice] --upgrade`
+> NOTE: In order to update to the latest commit, run `pip3.9 install "LLMChat[blip,llama,voice] @ git+https://github.com/hc20k/LLMChat.git" --upgrade`
+
+Run:
+```bash
+mkdir llmchat && cd llmchat # create a directory for the bot
+llmchat # run the cli
+```
+> Skip to [Configuration](#configuration)
 
 ### Manual Install
 
@@ -166,11 +173,31 @@ nano config.ini
 `model =`
  - [Desired model](https://platform.openai.com/docs/models)
 
+`reverse_proxy_url = ` *optional*
+- Allows you to use a specified reverse proxy.
+
 `use_embeddings =`
 
 [What are embeddings?](https://platform.openai.com/docs/guides/embeddings)
  - `true` - the bot will create embeddings for each message and will be able to recall highly relevant information, ensuring more accurate responses (more expensive)
  - `false` - the bot will NOT create embeddings for each message and will be less likely to recall relevant information (less expensive)
+
+`similarity_threshold = ` *a float ranging from 0 - 1, default 0.83*
+- the bot will only use past messages with a relevancy rating above this number. 
+
+`max_similar_messages = ` *an integer, default 5*
+- the maximum number of relevant messages that the bot will be reminded of
+
+### [Poe] 
+> **CAUTION!**
+> 
+> Poe doesn't work nearly as well as the other supported LLMs. There is no support for editing messages, and the method used for injecting the initial prompt / reminder does not work as well.
+
+`cookie =`
+- Your Poe browser token, instructions on how to find that [here](https://github.com/ading2210/poe-api#finding-your-token)
+
+`model = `
+- any one of `capybara, beaver, a2_2, a2, chinchilla, nutria`. Use `/list_models` for a list of all usable models.
 
 ### [Discord]
 
