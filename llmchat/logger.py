@@ -2,7 +2,7 @@ import logging
 
 log_level = logging.DEBUG
 
-logger = logging.getLogger("GPTEleven")
+logger = logging.getLogger("LLMChat")
 logger.setLevel(log_level)
 color_formatter = logging.Formatter(
     "[%(asctime)s] [%(filename)s:%(lineno)d] %(levelname)s - %(message)s",

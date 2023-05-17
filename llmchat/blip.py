@@ -18,7 +18,7 @@ class BLIP:
         generated_ids = self.model.generate(**inputs)
         return self.processor.decode(generated_ids[0], skip_special_tokens=True)
 
-    def __del__(self):
+    def unload(self):
         del self.model
         del self.processor
         torch.cuda.empty_cache()

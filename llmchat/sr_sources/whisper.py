@@ -25,7 +25,7 @@ class Whisper(SRSource):
         decoded = self.processor.batch_decode(predicted_ids, skip_special_tokens=True, normalize=True)[0]
         return decoded
 
-    def __del__(self):
+    async def unload(self):
         del self.model
         del self.processor
         torch.cuda.empty_cache()

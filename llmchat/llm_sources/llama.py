@@ -7,6 +7,7 @@ import os
 from langchain.llms import LlamaCpp
 import functools
 import time
+import glob
 
 class LLaMA(LLMSource):
     model: LlamaCpp = None
@@ -21,12 +22,12 @@ class LLaMA(LLMSource):
             )
             return
 
-        model_path = os.path.join(
-            self.config.llama_search_path, self.config.llama_model_name
-        )
+        model_path = self.config.llama_model_name
         if not os.path.exists(model_path):
-            logger.warn("LLaMA model", model_path, "doesn't exist!")
-            return
+            model_path = os.path.join(self.config.llama_search_path, self.config.llama_model_name)
+            if not os.path.exists(model_path):
+                logger.warn("LLaMA model", model_path, "doesn't exist!")
+                return
 
         self.model = LlamaCpp(
             model_path=model_path,
@@ -38,7 +39,7 @@ class LLaMA(LLMSource):
         # f16_kv is half precision, n_ctx is context window
 
     async def list_models(self) -> list[discord.SelectOption]:
-        return [discord.SelectOption(label=f, value=f, default=self.config.llama_model_name == f) for f in os.listdir(self.config.llama_search_path)]
+        return [discord.SelectOption(label=os.path.basename(f), value=f, default=self.config.llama_model_name == f) for f in glob.iglob('models/llama/**/*.bin', recursive=True)]
 
     def set_model(self, model_id: str) -> None:
         self.config.llama_model_name = model_id
@@ -96,4 +97,7 @@ class LLaMA(LLMSource):
     def current_model_name(self) -> str:
         if len(self.config.llama_model_name) == 0:
             return "*Not loaded!*"
-        return self.config.llama_model_name
+        return os.path.basename(self.config.llama_model_name)
+
+    async def unload(self):
+        del self.model

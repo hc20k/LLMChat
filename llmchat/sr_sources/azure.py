@@ -14,3 +14,6 @@ class Azure(SRSource):
     def recognize_speech(self, data: sr.AudioData):
         text, confidence = self.recognizer.recognize_azure(data, key=self.config.azure_key, location=self.config.azure_region)
         return text
+
+    async def unload(self):
+        del self.recognizer

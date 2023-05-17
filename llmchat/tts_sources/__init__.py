@@ -29,3 +29,6 @@ class TTSSource:
     @property
     def current_voice_name(self) -> str:
         return "Unknown voice"
+
+    async def unload(self):
+        pass

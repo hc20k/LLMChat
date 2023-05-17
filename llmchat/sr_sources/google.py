@@ -14,5 +14,5 @@ class Google(SRSource):
     def recognize_speech(self, data: sr.AudioData):
         return self.recognizer.recognize_google(data)
 
-    def __del__(self):
+    async def unload(self):
         del self.recognizer

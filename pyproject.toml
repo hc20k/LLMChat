@@ -1,6 +1,6 @@
 [project]
 name = "llmchat"
-dependencies = ["logger", "openai", "numpy", "PyAudio", "pynacl", "requests", "typing", "discord.py @ git+https://github.com/Sheepposu/discord.py@voice-receive", "SpeechRecognition", "Pillow", "tiktoken", "scipy"]
+dependencies = ["logger", "openai", "numpy", "PyAudio", "pynacl", "requests", "typing", "discord.py @ git+https://github.com/Sheepposu/discord.py@voice-receive", "SpeechRecognition", "Pillow", "tiktoken", "scipy", "poe-api"]
 version = "1.0.0"
 scripts = {llmchat = "llmchat.cli:main"}
 

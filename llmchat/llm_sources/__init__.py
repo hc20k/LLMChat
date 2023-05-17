@@ -1,4 +1,4 @@
-from discord import User, Client, SelectOption
+from discord import User, Client, SelectOption, Message
 from llmchat.config import Config
 from llmchat.persistence import PersistentData
 from datetime import datetime
@@ -46,6 +46,12 @@ class LLMSource:
 
         return text
 
+    def on_purge(self):
+        pass
+
+    def on_message_delete(self, message: Message):
+        pass
+
     @property
     def is_openai(self) -> bool:
         return False
@@ -55,4 +61,7 @@ class LLMSource:
         return "Unknown LLM"
 
     def on_config_reloaded(self):
+        pass
+
+    async def unload(self):
         pass

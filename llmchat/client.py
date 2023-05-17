@@ -47,93 +47,53 @@ class DiscordClient(discord.Client):
 
         self.tree = app_commands.CommandTree(self)
         self.tree.add_command(
-            app_commands.Command(
-                name="info",
-                description="Prints some information about the bot.",
-                callback=self.print_info,
-            )
+            app_commands.Command(name="info", description="Prints some information about the bot.", callback=self.print_info)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="configure",
-                description="Configure the chatbot.",
-                callback=self.show_configure,
-            )
+            app_commands.Command(name="configure", description="Configure the chatbot.", callback=self.show_configure)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="your_identity",
-                description="Sets your identity.",
-                callback=self.set_your_identity,
-            )
+            app_commands.Command(name="your_identity", description="Sets your identity.", callback=self.set_your_identity)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="avatar",
-                description="Sets the chatbot's avatar.",
-                callback=self.set_avatar,
-            )
+            app_commands.Command(name="avatar", description="Sets the chatbot's avatar.", callback=self.set_avatar)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="purge",
-                description="Deletes all messages in channel. [DANGEROUS!]",
-                callback=self.purge_channel,
-            )
+            app_commands.Command(name="purge", description="Deletes all messages in channel. [DANGEROUS!]", callback=self.purge_channel)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="model", description="Allows you to change the LLM and voice model.", callback=self.set_model
-            )
+            app_commands.Command(name="model", description="Allows you to change the LLM and voice model.", callback=self.set_model)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="retry",
-                description="Retries the last message.",
-                callback=self.retry_last_message,
-            )
+            app_commands.Command(name="retry", description="Retries the last message.", callback=self.retry_last_message)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="system",
-                description="Sends a message as the system role. Only avaliable for >= GPT3.5.",
-                callback=self.send_system,
-            )
+            app_commands.Command(name="system", description="Sends a message as the system role. Only avaliable for >= GPT3.5.", callback=self.send_system)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="message_context_count",
-                description="Sets the message context count. Default is 10.",
-                callback=self.set_message_context_count,
-            )
+            app_commands.Command(name="message_context_count", description="Sets the message context count. Default is 10.", callback=self.set_message_context_count)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="audiobook_mode",
-                description="Toggles audiobook mode. (Description in README)",
-                callback=self.set_audiobook_mode,
-            )
+            app_commands.Command(name="audiobook_mode", description="Toggles audiobook mode. (Description in README)", callback=self.set_audiobook_mode)
         )
         self.tree.add_command(
-            app_commands.Command(
-                name="reload_config",
-                description="Reloads the settings from config.ini.",
-                callback=self.reload_config,
-            )
+            app_commands.Command(name="reload_config", description="Reloads the settings from config.ini.", callback=self.reload_config)
+        )
+        self.tree.add_command(
+            app_commands.Command(name="set_config", description="Set a specific value in config.ini", callback=self.config_set_value)
         )
 
         if self.config.bot_blip_enabled:
             self.blip = BLIP()
 
-        self.run(
-            self.config.discord_bot_api_key,
-            log_handler=console_handler,
-            log_formatter=color_formatter,
-        )
+        self.run(self.config.discord_bot_api_key, log_handler=console_handler, log_formatter=color_formatter)
 
     async def setup_tts(self):
         logger.info(f"TTS: {self.config.bot_tts_service}")
         params = [self, self.config, self.db]
+
+        if self.tts:
+            await self.tts.unload()
 
         if self.config.bot_tts_service == "elevenlabs":
             from llmchat.tts_sources.elevenlabs import ElevenLabs
@@ -151,19 +111,29 @@ class DiscordClient(discord.Client):
             from llmchat.tts_sources.playht import PlayHt
             self.tts = PlayHt(*params)
         else:
-            logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}")
+            logger.critical(f"Unknown TTS service: {self.config.bot_tts_service}.")
 
     async def setup_llm(self):
         logger.info(f"LLM: {self.config.bot_llm}")
         params = [self, self.config, self.db]
+
+        if self.llm:
+            await self.llm.unload()
+
         if self.config.bot_llm == "openai":
             from llmchat.llm_sources.oai import OpenAI
             self.llm = OpenAI(*params)
         elif self.config.bot_llm == "llama":
             from llmchat.llm_sources.llama import LLaMA
             self.llm = LLaMA(*params)
+        elif self.config.bot_llm == "poe":
+            from llmchat.llm_sources.poe import QuoraPOE
+            self.llm = QuoraPOE(*params)
+            logger.warn("POE is extremely experimental! Expect issues.")
         else:
             logger.critical(f"Unknown LLM: {self.config.bot_llm}")
+            await self.close()
+            exit(1)
 
         await self.change_presence(activity=discord.Game(name=self.llm.current_model_name))
         logger.info(f"Current model: {self.llm.current_model_name}")
@@ -171,6 +141,10 @@ class DiscordClient(discord.Client):
     async def setup_sr(self):
         logger.info(f"Speech recognition service: {self.config.bot_speech_recognition_service}")
         params = [self, self.config, self.db]
+
+        if self.sr:
+            await self.sr.unload()
+
         if self.config.bot_speech_recognition_service == "whisper":
             from llmchat.sr_sources.whisper import Whisper
             self.sr = Whisper(*params)
@@ -194,15 +168,13 @@ class DiscordClient(discord.Client):
                 await self.setup_llm()
             if prev_blip != self.config.bot_blip_enabled:
                 if not self.config.bot_blip_enabled:
-                    del self.blip
+                    self.blip.unload()
                     self.blip = None
                 else:
                     self.blip = BLIP()
             if prev_tts != self.config.bot_tts_service:
                 await self.setup_tts()
             if prev_speech != self.config.bot_speech_recognition_service:
-                del self.sr
-                self.sr = None
                 await self.setup_sr()
 
             self.llm.on_config_reloaded()
@@ -214,6 +186,15 @@ class DiscordClient(discord.Client):
             logger.error(f"Error reloading config: {str(e)}")
             followup: discord.WebhookMessage = await ctx.followup.send(content=f"Error reloading config: ```{str(e)}```")
             await followup.delete(delay=5)
+
+    async def config_set_value(self, ctx: Interaction, section: str, option: str, value: str):
+        temp = Config(self.config.path)
+        temp._config.set(section, option, value)
+        temp.save()
+        del temp
+
+        # reload
+        await self.reload_config(ctx)
 
     async def retry_last_message(self, ctx: Interaction):
         history_item = self.db.last
@@ -261,9 +242,7 @@ class DiscordClient(discord.Client):
 
     async def set_message_context_count(self, ctx: Interaction, count: int):
         self.config.llm_context_messages_count = count
-        await ctx.response.send_message(
-            f"Set message context count to {count}", delete_after=3
-        )
+        await ctx.response.send_message(f"Set message context count to {count}", delete_after=3)
 
     async def set_audiobook_mode(self, ctx: Interaction, status: bool):
         self.config.bot_audiobook_mode = status
@@ -275,9 +254,7 @@ class DiscordClient(discord.Client):
                 self.sink = BufferAudioSink(self.sr, self.on_speech, self.loop)
                 vc.listen(self.sink)
 
-        await ctx.response.send_message(
-            f"Audiobook mode is now **{'on' if status else 'off'}**.", delete_after=3
-        )
+        await ctx.response.send_message(f"Audiobook mode is now **{'on' if status else 'off'}**.", delete_after=3)
 
     async def set_avatar(self, ctx: Interaction, url: str):
         r = requests.get(url, stream=True)
@@ -334,22 +311,16 @@ class DiscordClient(discord.Client):
         embed.add_field(name="✍️ Initial prompt", value=self.llm._insert_wildcards(self.config.bot_initial_prompt, (name, identity)) if self.config.bot_initial_prompt else "*Not set!*", inline=False)
         embed.add_field(name="\u200B", value="", inline=False)  # seperator
 
-        embed.add_field(
-            name="🫵 Your info (set this information with /your_identity)",
-            value="",
-            inline=False,
-        )
-        embed.add_field(
-            name="📛 Name", value=name if name is not None else "*Not set!*")
-        embed.add_field(
-            name="✒️ Description", value=identity if identity is not None else "*Not set!*"
-        )
+        embed.add_field(name="🫵 Your info (set this information with /your_identity)", value="", inline=False)
+        embed.add_field(name="📛 Name", value=name if name is not None else "*Not set!*")
+        embed.add_field(name="✒️ Description", value=identity if identity is not None else "*Not set!*")
 
         await ctx.followup.send(embed=embed)
 
     async def purge_channel(self, ctx: Interaction):
         await ctx.response.send_message(f"Channel purged!", delete_after=3)
         await ctx.channel.purge()
+        self.llm.on_purge()
         self.db.clear()
 
     async def set_model(self, ctx: Interaction):
@@ -379,9 +350,11 @@ class DiscordClient(discord.Client):
                 raise e
 
             view = discord.ui.View()
-            view.add_item(ui_extensions.PaginationDropdown(options=await self.llm.list_models(), callback=llm_callback, on_exception=on_exception))
-            view.add_item(ui_extensions.PaginationDropdown(options=self.tts.list_voices(), callback=voice_callback, on_exception=on_exception))
-            await ctx.followup.send(content="Select an LLM model or a TTS voice:", view=view)
+            if self.llm:
+                view.add_item(ui_extensions.PaginationDropdown(options=await self.llm.list_models(), callback=llm_callback, on_exception=on_exception))
+            if self.tts:
+                view.add_item(ui_extensions.PaginationDropdown(options=self.tts.list_voices(), callback=voice_callback, on_exception=on_exception))
+            await ctx.followup.send(content="Select an LLM model" + (" or a TTS voice:" if self.tts else ":"), view=view)
         except Exception as e:
             logger.error(f"Exception thrown while constructing model/voice pickers: {str(e)}")
             exc_message = await ctx.followup.send(content=f"Exception thrown while constructing model/voice pickers:\n```{str(e)}```")
@@ -426,9 +399,7 @@ class DiscordClient(discord.Client):
                 )
 
             async def on_submit(self, interaction: Interaction):
-                this.db.set_identity(
-                    ctx.user.id, self.children[0].value, self.children[1].value
-                )
+                this.db.set_identity(ctx.user.id, self.children[0].value, self.children[1].value)
                 await interaction.response.send_message("Changes committed.", delete_after=3)
 
         modal = IdentityModal(title=f"Edit {ctx.user.display_name}'s identity")
@@ -565,8 +536,7 @@ class DiscordClient(discord.Client):
 
         message = payload.cached_message
         if not message:
-            logger.warn(
-                "The bot was unable to look for any messages that may have been split from this one! Make sure to delete the parent message to remove it from the history!")
+            logger.warn("The bot was unable to look for any messages that may have been split from this one! Make sure to delete the parent message to remove it from the history!")
             return
 
         channel = self.get_channel(payload.channel_id)
@@ -603,8 +573,7 @@ class DiscordClient(discord.Client):
         except BaseException as e:
             logger.error(f"Exception thrown while trying to generate TTS: {str(e)}")
             if text_channel_ctx:
-                await text_channel_ctx.send(content=f"Exception thrown while trying to generate TTS:\n```{str(e)}```",
-                                            silent=True)
+                await text_channel_ctx.send(content=f"Exception thrown while trying to generate TTS:\n```{str(e)}```", silent=True)
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id \

@@ -334,3 +334,21 @@ class Config:
     def playht_voice_id(self, voice_id):
         self._config.set("Play.ht", "voice_id", voice_id)
         self.save()
+
+    @property
+    def poe_auth_cookie(self) -> str:
+        return self._config.get("Poe", "cookie", fallback=None)
+
+    @poe_auth_cookie.setter
+    def poe_auth_cookie(self, cookie):
+        self._config.set("Poe", "cookie", cookie)
+        self.save()
+
+    @property
+    def poe_model(self) -> str:
+        return self._config.get("Poe", "model", fallback="capybara")
+
+    @poe_model.setter
+    def poe_model(self, model):
+        self._config.set("Poe", "model", model)
+        self.save()
