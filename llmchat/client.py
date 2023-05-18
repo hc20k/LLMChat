@@ -527,7 +527,7 @@ class DiscordClient(discord.Client):
                 await member.guild.voice_client.disconnect(force=True)
         elif before.channel is None and after.channel is not None:
             # member joined channel, join if you haven't already
-            if member.guild.voice_client is None:
+            if member.guild.voice_client is None and self.config.can_interact_with_channel_id(after.channel.id):
                 vc: discord.VoiceClient = await after.channel.connect()
                 if self.config.bot_audiobook_mode:
                     return
