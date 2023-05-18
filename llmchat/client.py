@@ -130,6 +130,9 @@ class DiscordClient(discord.Client):
             from llmchat.llm_sources.poe import QuoraPOE
             self.llm = QuoraPOE(*params)
             logger.warn("POE is extremely experimental! Expect issues.")
+        elif self.config.bot_llm == "anthropic":
+            from llmchat.llm_sources.anthropic import Anthropic
+            self.llm = Anthropic(*params)
         else:
             logger.critical(f"Unknown LLM: {self.config.bot_llm}")
             await self.close()
@@ -277,7 +280,7 @@ class DiscordClient(discord.Client):
                 all_messages.append(split_msg)
                 if not initial_message:
                     initial_message = split_msg
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.25)  # try not to get rate limited
         return all_messages
 
     async def print_info(self, ctx: Interaction):
@@ -563,7 +566,8 @@ class DiscordClient(discord.Client):
                 f.write(buf.getbuffer())
 
             def _after(e):
-                del buf
+                if buf:
+                    del buf
                 if after:
                     after(e)
                 if e:
@@ -578,15 +582,12 @@ class DiscordClient(discord.Client):
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id \
                 or not self.config.can_interact_with_channel_id(message.channel.id) \
-                or not message.content:
+                or (not message.content and not message.attachments):
             # from me or not allowed in channel
             return
 
-        if self.config.bot_blip_enabled:
-            for a in message.attachments:
-                if not a.content_type.startswith("image/"):
-                    continue
-
+        for a in message.attachments:
+            if a.content_type.startswith("image/") and self.config.bot_blip_enabled:
                 # download image
                 r = requests.get(a.url, stream=True)
                 r.raise_for_status()
@@ -594,6 +595,11 @@ class DiscordClient(discord.Client):
                 caption = self.blip.process_image(img)
                 logger.info(f"Image caption: {caption}")
                 message.content += f"\n[{caption}]"
+            elif a.content_type.startswith("text/plain"):
+                r = requests.get(a.url)
+                r.raise_for_status()
+                logger.info("Downloaded plaintext file")
+                message.content = r.text
 
         self.db.append(message)
         await self.store_embedding((message.author.id, message.content, message.id))
@@ -601,7 +607,7 @@ class DiscordClient(discord.Client):
         async with message.channel.typing():
             try:
                 response = await self.llm.generate_response(invoker=message.author)
-            except Exception as e:
+            except BaseException as e:
                 view = discord.ui.View()
                 retry_btn = discord.ui.Button(label="Retry")
 
@@ -617,7 +623,7 @@ class DiscordClient(discord.Client):
 
                 # since it failed remove the message
                 self.db.remove(message.id)
-                raise e
+                raise
 
         logger.debug(f"Response: {response}")
 

@@ -352,3 +352,21 @@ class Config:
     def poe_model(self, model):
         self._config.set("Poe", "model", model)
         self.save()
+
+    @property
+    def anthropic_model(self) -> str:
+        return self._config.get("Anthropic", "model", fallback="claude-v1")
+
+    @anthropic_model.setter
+    def anthropic_model(self, model):
+        self._config.set("Anthropic", "model", model)
+        self.save()
+
+    @property
+    def anthropic_key(self) -> str:
+        return self._config.get("Anthropic", "key", fallback=None)
+
+    @anthropic_key.setter
+    def anthropic_key(self, key):
+        self._config.set("Anthropic", "key", key)
+        self.save()

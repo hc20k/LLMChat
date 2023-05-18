@@ -188,6 +188,17 @@ nano config.ini
 `max_similar_messages = ` *an integer, default 5*
 - the maximum number of relevant messages that the bot will be reminded of
 
+### [Anthropic]
+
+> **Note:** Anthropic's models are only suited for assistance, meaning they will refuse to impersonate a character.
+
+`key =`
+ - Your [Anthropic API key](https://console.anthropic.com/)
+
+`model =`
+- Any one of `claude-v1, claude-v1-100k, claude-instant-v1, claude-instant-v1-100k, claude-v1.3, claude-v1.3-100k, claude-v1.2, claude-v1.0,
+            claude-instant-v1.1, claude-instant-v1.1-100k, claude-instant-v1.0`
+
 ### [Poe] 
 > **CAUTION!**
 > 
